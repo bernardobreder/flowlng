@@ -1,0 +1,1 @@
+watchexec -w src bin/make.sh

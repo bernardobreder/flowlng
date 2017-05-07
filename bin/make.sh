@@ -1,4 +1,4 @@
 clear
 rm -f bin/flow
-gcc src/*.c -o bin/flow
+gcc -I inc src/*.c -o bin/flow
 bin/flow
