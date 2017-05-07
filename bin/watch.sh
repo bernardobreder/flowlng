@@ -1,1 +1,1 @@
-watchexec -w src bin/make.sh
+watchexec -w src -w inc -w bin bin/make.sh

@@ -10,6 +10,10 @@ Os testes do site deve ser executado na forma de watch e executado de acordo com
 
 Através das dependencias dos modulos, os modulos dependentes devem ser executados para validar a integração entre modulos
 
+# Relatório de Dependencia
+
+A linguagem deve mostrar uma relatório de dependencia entre modulos para que possa informar aos desenvolvedores o grau de aclopamento
+
 # TypeScript
 
 A linguagem irá ser tipado apra melhorar a escrita do código

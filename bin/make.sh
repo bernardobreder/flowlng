@@ -1,4 +1,5 @@
 clear
-rm -f bin/flow
-gcc -I inc src/*.c -o bin/flow
-bin/flow
+rm -rf dist
+mkdir dist
+gcc -I inc src/*.c src/mac/*.c -o dist/flow -framework CoreServices
+dist/flow
