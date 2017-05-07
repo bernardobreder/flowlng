@@ -41,3 +41,6 @@ A linguagem deve disponibilizar uma forma pela qual a empresa internamente possa
 # Auto Refresh do Browser
 
 A linguagem deve disponiblizar uma meio pela qual o navegador possa atualizar conforme a mudança do código
+
+# Organização de diretório de modulos
+
