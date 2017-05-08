@@ -309,4 +309,6 @@ int watch(int argc, TCHAR *argv[])
 //   return 0;
 // }
 
+// http://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner
+// http://www.linuxhowtos.org/C_C++/socket.htm
 // http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
