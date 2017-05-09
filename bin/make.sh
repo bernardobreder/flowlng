@@ -8,9 +8,9 @@ echo Compiling...
 gcc \
     -I inc \
     src/*.c \
+    src/unix/*.c \
     src/mac/*.c \
-    -o dist/flow \
-    -framework CoreServices
+    -o dist/flow
 
 echo Executing...
 dist/flow --test
