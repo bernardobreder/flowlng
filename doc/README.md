@@ -42,5 +42,19 @@ A linguagem deve disponibilizar uma forma pela qual a empresa internamente possa
 
 A linguagem deve disponiblizar uma meio pela qual o navegador possa atualizar conforme a mudança do código
 
+# Entrada de Saída
+
+Todas as operações de entrada e saida serão tratado async mas no código irá ser apresentado como sync.
+
 # Organização de diretório de modulos
 
+Cada modulo irá ter um diretório proprio com o nome do seu id. Cada diretório terá um arquivo de descrição que especifica detalhes do projeto. Quando a linguagem for invocada, todos os modulos de modo lazy irão ser carregado.
+
+```bash
+$ ls
+httpserver/
+server/
+stringbuilder/
+
+flow server
+```
