@@ -1,1 +1,6 @@
-watchexec -w src -w inc -w bin bin/make.sh
+watchexec \
+    -w src \
+    -w src/mac \
+    -w inc \
+    -w bin \
+    bin/make.sh

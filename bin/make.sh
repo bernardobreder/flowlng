@@ -1,5 +1,18 @@
 clear
+
+echo Clearing...
 rm -rf dist
 mkdir dist
-gcc -I inc src/*.c src/mac/*.c -o dist/flow -framework CoreServices
-dist/flow
+
+echo Compiling...
+gcc \
+    -I inc \
+    src/*.c \
+    src/mac/*.c \
+    -o dist/flow \
+    -framework CoreServices
+
+echo Executing...
+dist/flow --test
+
+echo Finished

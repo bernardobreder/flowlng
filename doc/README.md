@@ -58,3 +58,7 @@ stringbuilder/
 
 flow server
 ```
+
+# Construção do Site
+
+Para efetuar a construção do site, é preciso criar uma infraestrutura básica para poder gerar o código html do site. Idealmente, o site pode ser construido com o conteudo de vários arquivos MarkDown anexado a alguns arquivos Css.
