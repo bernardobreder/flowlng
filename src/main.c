@@ -13,8 +13,8 @@ int main(int argc, char **argv)
         if (!strcmp(arg, "-t") || !strcmp(arg, "--test")) { testMode = 1; }
     }
 
+    test();
     if (testMode) {
-        test();
     } else {
         printf("Usage:\n");
         printf("  flow [options] <file.js>\n");

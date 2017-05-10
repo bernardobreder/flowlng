@@ -1,4 +1,6 @@
 
+#include <time.h> 
+
 void watch();
 
 struct watch_t {
@@ -10,6 +12,7 @@ struct watch_node_t {
     char* path;
     char* name;
     size_t length;
+    time_t modifed;
     char* md5;
     struct watch_node_t* next;
 };

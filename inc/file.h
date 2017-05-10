@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include <time.h>
 
 struct flow_resource_t {
     unsigned char is_file;
@@ -20,6 +21,8 @@ struct flow_resource_node_t* flow_file_list_deep(char* path);
 
 int flow_resource_node_cmp(struct flow_resource_node_t* left, struct flow_resource_node_t* right);
 
+int flow_resource_node_cmp_inv(struct flow_resource_node_t* left, struct flow_resource_node_t* right);
+
 struct flow_resource_node_t* flow_resource_node_next(struct flow_resource_node_t* node);
 
 void flow_resource_node_setnext(struct flow_resource_node_t* node, struct flow_resource_node_t* value);
@@ -27,6 +30,8 @@ void flow_resource_node_setnext(struct flow_resource_node_t* node, struct flow_r
 void flow_resource_node_free(struct flow_resource_node_t* self, unsigned char deep);
 
 size_t flow_file_length(const char* filename);
+
+time_t flow_file_modif(const char* filename);
 
 unsigned char* flow_io_file(const char* filename);
 

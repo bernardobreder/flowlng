@@ -10,7 +10,7 @@ gcc \
     src/*.c \
     src/unix/*.c \
     src/mac/*.c \
-    -o dist/flow
+    -w -g -o dist/flow
 
 echo Executing...
 dist/flow --test

@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include "main.h"
 #include "file.h"
+#include "thread.h"
 #include "md5.h"
 #include "watch.h"
 
@@ -31,10 +32,35 @@ void listdir(const char *name, int level) {
     } while ((entry = readdir(dir)));
     closedir(dir);
 }
-
-void test() {
-    struct watch_t* watch = watch_new(".");
+  
+void test() {        
+    printf("Creating watch\n");
+    struct watch_t* watch = watch_new("/Users/bernardobreder/git/flowlng");
+    
+    printf("Search changed\n");
+    for (;;) {
+        watch_changed(watch);
+        flow_thread_sleep(500);
+    }
+    // printf("[2] Search changed\n");
+    // watch_changed(watch);
+    // printf("[3] Search changed\n");
+    // watch_changed(watch);
+    // printf("[4] Search changed\n");
+    // watch_changed(watch);
+    // printf("[5] Search changed\n");
+    // watch_changed(watch);
+    // printf("[6] Search changed\n");
+    // watch_changed(watch);
+    // printf("[7] Search changed\n"); 
+    // watch_changed(watch);
+    // printf("[8] Search changed\n");
+    // watch_changed(watch);
+    // printf("[9] Search changed\n");
+    // watch_changed(watch);
+    
     watch_free(watch);
+    
     // listdir(".", 0);
     // char *filePath = "src/main.c";
     // struct stat attrib;
