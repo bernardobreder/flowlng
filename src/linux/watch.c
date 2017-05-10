@@ -1,5 +1,5 @@
 #include <CoreServices/CoreServices.h>
-#include "watch.h"
+#include "linux/watch.h"
 
 int flow_watch_node_cmp(const void* pleft, const void* pright) {
     const struct watch_node_t* left = (struct watch_node_t*) pleft;

@@ -1,10 +1,11 @@
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>
 #include "main.h"
 #include "watch.h"
 #include "file.h"
+#include "input.h"
 
-#include <signal.h>
 // --signal SIGKILL \
     
 // void registerSignal() {
@@ -80,14 +81,9 @@ int main(int argc, char **argv)
         printf("\n");
     } else {
         printf("Creating watch\n");
-        struct watch_t* watch = watch_new("/Users/bernardobreder/git/flowlng");
-        printf("Search changed\n");
-        for (;;) {
-            printf("Watching...");
-            watch_changed(watch);
-            printf("Ok\n");
-            flow_thread_sleep(1000);
-        }
+        struct watch_t* watch = watch_new();
+        watch_dir(watch, "/Users/bernardobreder/git/flowlng/src");
+        watch_loop(watch, flow_input_perform);
         watch_free(watch);
     }
 }

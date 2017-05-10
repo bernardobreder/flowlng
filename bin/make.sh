@@ -10,6 +10,7 @@ gcc \
     src/*.c \
     src/unix/*.c \
     src/mac/*.c \
+    -framework CoreServices \
     -w -g -o dist/flow
 
 echo Executing...
