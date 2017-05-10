@@ -18,6 +18,12 @@ struct flow_resource_node_t* flow_file_list(char* path);
 
 struct flow_resource_node_t* flow_file_list_deep(char* path);
 
+int flow_resource_node_cmp(struct flow_resource_node_t* left, struct flow_resource_node_t* right);
+
+struct flow_resource_node_t* flow_resource_node_next(struct flow_resource_node_t* node);
+
+void flow_resource_node_setnext(struct flow_resource_node_t* node, struct flow_resource_node_t* value);
+
 void flow_resource_node_free(struct flow_resource_node_t* self, unsigned char deep);
 
 size_t flow_file_length(const char* filename);

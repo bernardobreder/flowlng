@@ -2,11 +2,13 @@
 void watch();
 
 struct watch_t {
+    char* path;
     struct watch_node_t* node;
 };
 
 struct watch_node_t {
     char* path;
+    char* name;
     size_t length;
     char* md5;
     struct watch_node_t* next;

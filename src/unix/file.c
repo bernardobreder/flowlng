@@ -28,6 +28,7 @@ struct flow_resource_node_t* flow_file_list(char* name) {
 
 	struct flow_resource_node_t* node = 0;
     do {
+		if (entry->d_type != DT_DIR && entry->d_type != DT_REG) continue;
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..") || entry->d_name[0] == '.') continue;
         char path[1024];
         int len = snprintf(path, sizeof(path) - 1, "%s/%s", name, entry->d_name);
