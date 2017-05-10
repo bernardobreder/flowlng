@@ -1,4 +1,5 @@
 watchexec \
+    -r \
     -w src \
     -w src/mac \
     -w inc \

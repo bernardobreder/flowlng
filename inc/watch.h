@@ -1,20 +1,20 @@
 
 #include <time.h> 
 
-void watch();
-
 struct watch_t {
     char* path;
     struct watch_node_t* node;
 };
 
 struct watch_node_t {
-    char* path;
+    char* parent;
+    int parent_hash;
     char* name;
-    size_t length;
-    time_t modifed;
-    char* md5;
-    struct watch_node_t* next;
+    int name_hash;
+    char* path;
+    int path_hash;
+    time_t modified;
+    unsigned char mark;
 };
 
 struct watch_t* watch_new(char* path);

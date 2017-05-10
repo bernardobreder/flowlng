@@ -4,18 +4,56 @@
 #include "watch.h"
 #include "file.h"
 
+#include <signal.h>
+// --signal SIGKILL \
+    
+// void registerSignal() {
+//     struct sigaction action;
+//     action.sa_handler = close_handler;
+//     sigemptyset(&action.sa_mask);
+//     action.sa_flags = 0;
+
+//     if (sigaction(SIGTERM, &action, nullptr) == 0)
+//     {
+//     FSW_ELOG(_("SIGTERM handler registered.\n"));
+//     }
+//     else
+//     {
+//     cerr << _("SIGTERM handler registration failed.") << endl;
+//     }
+
+//     if (sigaction(SIGABRT, &action, nullptr) == 0)
+//     {
+//     FSW_ELOG(_("SIGABRT handler registered.\n"));
+//     }
+//     else
+//     {
+//     cerr << _("SIGABRT handler registration failed.") << endl;
+//     }
+
+//     if (sigaction(SIGINT, &action, nullptr) == 0)
+//     {
+//     FSW_ELOG(_("SIGINT handler registered.\n"));
+//     }
+//     else
+//     {
+//     cerr << _("SIGINT handler registration failed") << endl;
+//     }
+// }
+
 int main(int argc, char **argv)
 {
-    int testMode = 0;
+    int test_mode = 0, help_mode = 0;
     int i;
     for (i = 1 ; i < argc ; i++) {
         char *arg = argv[i];
-        if (!strcmp(arg, "-t") || !strcmp(arg, "--test")) { testMode = 1; }
+        if (!strcmp(arg, "-t") || !strcmp(arg, "--test")) { test_mode = 1; }
+        if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) { help_mode = 1; }
     }
 
-    test();
-    if (testMode) {
-    } else {
+    if (test_mode) {
+        test();
+    } else if (help_mode) {
         printf("Usage:\n");
         printf("  flow [options] <file.js>\n");
         printf("  flow [mode]\n");
@@ -40,5 +78,16 @@ int main(int argc, char **argv)
         printf("\n");
         printf("Options:\n");
         printf("\n");
+    } else {
+        printf("Creating watch\n");
+        struct watch_t* watch = watch_new("/Users/bernardobreder/git/flowlng");
+        printf("Search changed\n");
+        for (;;) {
+            printf("Watching...");
+            watch_changed(watch);
+            printf("Ok\n");
+            flow_thread_sleep(1000);
+        }
+        watch_free(watch);
     }
 }

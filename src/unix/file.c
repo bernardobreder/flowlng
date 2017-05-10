@@ -18,12 +18,10 @@ size_t flow_file_length(const char* filename) {
 
 time_t flow_file_modif(const char* filename) {
 	struct stat st;
-	struct utimbuf new_times;
     stat(filename, &st);
-// TIMESPEC_TO_TIMEVAL(&new_times[0], &st.st_mtime);
-// gettimeofday(&new_times[1], NULL);
+    return st.st_mtime;
+//    struct utimbuf new_times;
 //	if (utime(filename, &new_times) < 0) return 0;
-    return mktime(gmtime(&st.st_mtime));
 //	return new_times.modtime;
 }
 

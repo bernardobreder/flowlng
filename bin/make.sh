@@ -13,6 +13,6 @@ gcc \
     -w -g -o dist/flow
 
 echo Executing...
-dist/flow --test
+dist/flow
 
 echo Finished
