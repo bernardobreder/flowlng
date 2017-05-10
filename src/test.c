@@ -35,7 +35,7 @@ void listdir(const char *name, int level) {
   
 void test() {        
     printf("Creating watch\n");
-    struct watch_t* watch = watch_new("/Users/bernardobreder/git/flowlng");
+    struct watch_t* watch = watch_new("/Users/bernardobreder/git/flowlng/src");
     
     printf("Search changed\n");
     for (;;) {
@@ -45,10 +45,10 @@ void test() {
     // printf("[2] Search changed\n");
     // watch_changed(watch);
     // printf("[3] Search changed\n");
-    // watch_changed(watch);
+    // watch_changed(watch);;
     // printf("[4] Search changed\n");
     // watch_changed(watch);
-    // printf("[5] Search changed\n");
+    // printf("[5] Search changed\n"); ; ; ;
     // watch_changed(watch);
     // printf("[6] Search changed\n");
     // watch_changed(watch);
