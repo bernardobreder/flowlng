@@ -17,36 +17,38 @@ struct js_token_t* js_lexer(const char* text) {
 				col++;
 			}
 		} else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$') {
-			unsigned short type = JS_TOKEN_TYPE_ID;
+			unsigned short type = JS_TOKEN_ID;
 			long begin = pc - text;
 			do { c = *(++pc); } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$');
 			size_t size = (size_t) ((pc - text) - begin);
-			char* word = (char*) strndup(text + begin, size);
+			char* word = (char*) text + begin;
 
             if (size == 2) {
-                if (!strcmp(word, "do")) type = JS_TOKEN_TYPE_DO_WORD;
-                else if (!strcmp(word, "if")) type = JS_TOKEN_TYPE_IF_WORD;
+                if (!strncmp(word, "do", 2)) type = JS_TOKEN_DO;
+                else if (!strncmp(word, "if", 2)) type = JS_TOKEN_IF;
             } else if (size == 3) {
-                if (!strcmp(word, "for")) type = JS_TOKEN_TYPE_FOR_WORD;
+                if (!strncmp(word, "for", 3)) type = JS_TOKEN_FOR;
             } else if (size == 4) {
-                if (!strcmp(word, "true")) type = JS_TOKEN_TYPE_TRUE_WORD;
-                else if (!strcmp(word, "else")) type = JS_TOKEN_TYPE_ELSE_WORD;
+                if (!strncmp(word, "true", 4)) type = JS_TOKEN_TRUE;
+                else if (!strncmp(word, "else", 4)) type = JS_TOKEN_ELSE;
             } else if (size == 5) {
-                if (!strcmp(word, "false")) type = JS_TOKEN_TYPE_FALSE_WORD;
-                else if (!strcmp(word, "while")) type = JS_TOKEN_TYPE_WHILE_WORD;
+                if (!strncmp(word, "false", 5)) type = JS_TOKEN_FALSE;
+                else if (!strncmp(word, "while", 5)) type = JS_TOKEN_WHILE;
+                else if (!strncmp(word, "break", 5)) type = JS_TOKEN_BREAK;
             } else if (size == 6) {
-                if (!strcmp(word, "return")) type = JS_TOKEN_TYPE_RETURN_WORD;
+                if (!strncmp(word, "return", 6)) type = JS_TOKEN_RETURN;
             } else if (size == 7) {
-                if (!strcmp(word, "require")) type = JS_TOKEN_TYPE_REQUIRE_WORD;
+                if (!strncmp(word, "require", 7)) type = JS_TOKEN_REQUIRE;
             } else if (size == 8) {
-                if (!strcmp(word, "function")) type = JS_TOKEN_TYPE_FUNCTION_WORD;
+                if (!strncmp(word, "function", 8)) type = JS_TOKEN_FUNCTION;
+                else if (!strncmp(word, "continue", 8)) type = JS_TOKEN_CONTINUE;
             }
             
             struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = type;
-			token->line = lin;
+            token->word = type == JS_TOKEN_ID ? strndup(word, size) : 0;
+            token->line = lin;
 			token->column = col;
-			token->word = type == JS_TOKEN_TYPE_ID ? word : 0;
 			token->next = 0;
 
 			if (tail) tail->next = token;
@@ -67,10 +69,10 @@ struct js_token_t* js_lexer(const char* text) {
 			char* word = (char*) strndup(text + begin, size);
 			
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
-			token->type = JS_TOKEN_TYPE_NUMBER;
+			token->type = JS_TOKEN_NUMBER;
+            token->word = word;
 			token->line = lin;
 			token->column = col;
-			token->word = word;
 			token->next = 0;
 
             if (tail) tail->next = token;
@@ -80,7 +82,7 @@ struct js_token_t* js_lexer(const char* text) {
 			col += size;
 			pc--;
 		} else if (c == '\"' || c == '\'') {
-			unsigned short type = JS_TOKEN_TYPE_STRING;
+			unsigned short type = JS_TOKEN_STRING;
 			long begin = pc - text;
 			c = *(++pc);
 			col++;
@@ -105,16 +107,16 @@ struct js_token_t* js_lexer(const char* text) {
 
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = type;
-			token->line = lin;
+            token->word = word;
+            token->line = lin;
 			token->column = col;
-			token->word = word;
 			token->next = 0;
 
             if (tail) tail->next = token;
             else head = token;
             tail = token;
 		} else if (c == '/' && pc[1] == '*') {
-			unsigned short type = JS_TOKEN_TYPE_STRING;
+			unsigned short type = JS_TOKEN_COMMENT;
 			long begin = pc - text;
 			pc += 3;
 			col += 3;
@@ -140,16 +142,16 @@ struct js_token_t* js_lexer(const char* text) {
 
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = type;
-			token->line = lin;
+            token->word = word;
+            token->line = lin;
 			token->column = col;
-			token->word = word;
 			token->next = 0;
 
             if (tail) tail->next = token;
             else head = token;
             tail = token;
 		} else if (c == '/' && pc[1] == '/') {
-			unsigned short type = JS_TOKEN_TYPE_STRING;
+			unsigned short type = JS_TOKEN_COMMENT;
 			long begin = pc - text;
 			pc += 2;
 			c = *pc;
@@ -169,9 +171,9 @@ struct js_token_t* js_lexer(const char* text) {
 
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = type;
-			token->line = lin;
+            token->word = word;
+            token->line = lin;
 			token->column = col;
-			token->word = word;
 			token->next = 0;
 
             if (tail) tail->next = token;
@@ -183,9 +185,9 @@ struct js_token_t* js_lexer(const char* text) {
 		} else {
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = c;
-			token->line = lin;
+            token->word = 0;
+            token->line = lin;
 			token->column = col;
-			token->word = 0;
 			token->next = 0;
 
             if (tail) tail->next = token;
@@ -194,5 +196,17 @@ struct js_token_t* js_lexer(const char* text) {
 		}
 		c = *(++pc);
 	}
+    {
+        struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+        token->type = JS_TOKEN_EOF;
+        token->word = 0;
+        token->line = -1;
+        token->column = -1;
+        token->next = 0;
+        
+        if (tail) tail->next = token;
+        else head = token;
+        tail = token;
+    }
 	return head;
 }

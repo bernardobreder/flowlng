@@ -10,10 +10,12 @@ gcc \
     src/*.c \
     src/unix/*.c \
     src/mac/*.c \
+    src/js/*.c \
+    src/test/js/*.c \
     -framework CoreServices \
     -w -g -o dist/flow
 
 echo Executing...
-dist/flow
+dist/flow -t
 
 echo Finished

@@ -5,12 +5,15 @@
 void test_js_lexer() {
     {
         struct js_token_t* tokens = js_lexer("");
-        assert(tokens == 0);
+        struct js_token_t* token = tokens;
+        assert(token->type == JS_TOKEN_EOF);
+        token = token->next;
+        js_tokens_free(tokens);
     }
     {
         struct js_token_t* tokens = js_lexer("a");
         assert(!strcmp(tokens->word, "a"));
-        assert(tokens->type == JS_TOKEN_TYPE_ID);
+        assert(tokens->type == JS_TOKEN_ID);
         js_tokens_free(tokens);
     }
     {
@@ -18,11 +21,14 @@ void test_js_lexer() {
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "a"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
         token = token->next;
 
         assert(!strcmp(token->word, "b"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
+        token = token->next;
+        
+        assert(token->type == JS_TOKEN_EOF);
         token = token->next;
         
         js_tokens_free(tokens);
@@ -32,15 +38,44 @@ void test_js_lexer() {
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "a"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
         token = token->next;
-
+        
         assert(!strcmp(token->word, "b"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
         token = token->next;
         
         assert(!strcmp(token->word, "c"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
+        token = token->next;
+        
+        assert(token->type == JS_TOKEN_EOF);
+        token = token->next;
+        
+        js_tokens_free(tokens);
+    }
+    {
+        struct js_token_t* tokens = js_lexer("1");
+        struct js_token_t* token = tokens;
+        
+        assert(!strcmp(token->word, "1"));
+        assert(token->type == JS_TOKEN_NUMBER);
+        token = token->next;
+        
+        assert(token->type == JS_TOKEN_EOF);
+        token = token->next;
+        
+        js_tokens_free(tokens);
+    }
+    {
+        struct js_token_t* tokens = js_lexer("-");
+        struct js_token_t* token = tokens;
+        
+        assert(!token->word);
+        assert(token->type == '-');
+        token = token->next;
+        
+        assert(token->type == JS_TOKEN_EOF);
         token = token->next;
         
         js_tokens_free(tokens);
@@ -50,18 +85,20 @@ void test_js_lexer() {
         struct js_token_t* token = tokens;
         
         assert(!token->word);
-        assert(token->type == JS_TOKEN_TYPE_FOR_WORD);
+        assert(token->type == JS_TOKEN_FOR);
         token = token->next;
 
         assert(!strcmp(token->word, "1"));
-        assert(token->type == JS_TOKEN_TYPE_NUMBER);
+        assert(token->type == JS_TOKEN_NUMBER);
         token = token->next;
         
         assert(!token->word);
         assert(token->type == '-');
         token = token->next;
         
-        assert(token == 0);
+        assert(token->type == JS_TOKEN_EOF);
+        token = token->next;
+        
         js_tokens_free(tokens);
     }
     {
@@ -69,7 +106,7 @@ void test_js_lexer() {
         struct js_token_t* token = tokens;
         
         assert(!token->word);
-        assert(token->type == JS_TOKEN_TYPE_FOR_WORD);
+        assert(token->type == JS_TOKEN_FOR);
         token = token->next;
         
         assert(!token->word);
@@ -77,7 +114,7 @@ void test_js_lexer() {
         token = token->next;
 
         assert(!strcmp(token->word, "a"));
-        assert(token->type == JS_TOKEN_TYPE_ID);
+        assert(token->type == JS_TOKEN_ID);
         token = token->next;
 
         assert(!token->word);
@@ -89,7 +126,7 @@ void test_js_lexer() {
         token = token->next;
 
         assert(!strcmp(token->word, "2"));
-        assert(token->type == JS_TOKEN_TYPE_NUMBER);
+        assert(token->type == JS_TOKEN_NUMBER);
         token = token->next;
 
         assert(!token->word);
@@ -102,6 +139,9 @@ void test_js_lexer() {
 
         assert(!token->word);
         assert(token->type == '}');
+        token = token->next;
+        
+        assert(token->type == JS_TOKEN_EOF);
         token = token->next;
 
         assert(token == 0);

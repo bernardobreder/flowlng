@@ -2,7 +2,7 @@
 #include "js.h"
 
 void js_token_free(struct js_token_t* self) {
-    free(self->word);
+    if (self->word) free(self->word);
     free(self);
 }
 

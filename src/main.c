@@ -87,7 +87,7 @@ int exec_func(int test_mode, int help_mode) {
 }
 
 int main(int argc, char **argv) {
-    int test_mode = 0, help_mode = 0, loop_mode;
+    int test_mode = 0, help_mode = 0, loop_mode = 0;
     int i;
     for (i = 1 ; i < argc ; i++) {
         char *arg = argv[i];
@@ -96,10 +96,9 @@ int main(int argc, char **argv) {
         else if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) { help_mode = 1; }
     }
     
-    if (loop_mode) return exec_func(test_mode, help_mode);
-    else {
+    if (loop_mode) {
         for (;;) {
             exec_func(test_mode, help_mode);
         }
-    }
+    } else return exec_func(test_mode, help_mode);
 }
