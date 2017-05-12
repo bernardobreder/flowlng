@@ -4,7 +4,7 @@
 
 char* flow_md5(unsigned char *buffer, size_t size) {
     unsigned char md5[CC_MD5_DIGEST_LENGTH];
-    CC_MD5(buffer, size, (unsigned char*) md5);
+    CC_MD5(buffer, (CC_LONG) size, (unsigned char*) md5);
     
     static const char HexEncodeChars[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
     char *resultData = malloc(CC_MD5_DIGEST_LENGTH * 2 + 1);

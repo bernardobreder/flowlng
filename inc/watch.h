@@ -11,7 +11,7 @@ typedef int flow_watch_event_t;
 struct watch_t {
     int dir_count;
     struct watch_dir_t* dirs;
-    void (*callback)(char* path, unsigned char type);
+    void (*callback)(char* path, flow_watch_event_t type);
 };
 
 struct watch_dir_t {
@@ -25,6 +25,6 @@ void watch_dir(struct watch_t* self, const char* path);
 
 void watch_free(struct watch_t* self);
 
-void watch_loop(struct watch_t* self, void (*callback)(char* path, unsigned char type));
+void watch_loop(struct watch_t* self, void (*callback)(char* path, flow_watch_event_t type));
 
 #endif

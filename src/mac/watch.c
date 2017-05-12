@@ -50,7 +50,7 @@ static void watch_loop_callback(ConstFSEventStreamRef streamRef, void *clientCal
     }
 }
 
-void watch_loop(struct watch_t* self, void (*callback)(char* path, unsigned char type)) {
+void watch_loop(struct watch_t* self, void (*callback)(char* path, flow_watch_event_t type)) {
     self->callback = callback;
     int i;
     CFStringRef dir_array[self->dir_count];

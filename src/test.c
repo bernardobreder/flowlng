@@ -10,7 +10,9 @@
 #include "thread.h"
 #include "md5.h"
 #include "watch.h"
+#include "test.h"
   
 void test() {        
-    
+    test_js_lexer();
+    test_js_parser();
 }
