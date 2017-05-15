@@ -6,13 +6,14 @@
 
 #define js_node_def() struct js_node_t *head = 0, *tail = 0
 #define js_node_add(NODE) { if (tail) { tail->next = NODE; } else { head = NODE; } } tail = NODE;
-#define js_parser_token(TOKEN, TOKENS) struct js_token_t* TOKEN = *TOKENS;
-#define js_parser_step(TOKEN, TOKENS) *TOKENS = TOKEN->next; js_parser_token_get(TOKEN, TOKENS);
-#define js_parser_next(TOKEN, TOKENS) js_parser_step(TOKEN, TOKENS); while (js_parser_type(token, JS_TOKEN_COMMENT)) { js_parser_step(TOKEN, TOKENS); }
-#define js_parser_token_get(TOKEN, TOKENS) TOKEN = *TOKENS;
-#define js_parser_type(TOKEN, TYPE) (TOKEN->type == TYPE)
-#define js_parser_type_not(TOKEN, TYPE) (TOKEN->type != TYPE)
-#define js_parser_error(TOKEN, MSG) (struct js_node_t*) js_node_error_new(strdup(MSG), (TOKEN->word ? strdup(TOKEN->word) : strdup("<EOF>")), TOKEN->line, TOKEN->column, TOKEN->line, TOKEN->column + (TOKEN->word ? strlen(TOKEN->word) : 0))
+#define js_parser_token(TOKEN, TOKENS)
+#define js_parser_step(TOKEN, TOKENS) self->token = self->token->next;
+#define js_parser_skip_comment() while (js_parser_type(token, JS_TOKEN_COMMENT)) { js_parser_step(TOKEN, TOKENS); }
+#define js_parser_next(TOKEN, TOKENS) js_parser_step(TOKEN, TOKENS); js_parser_skip_comment();
+#define js_parser_token_get(TOKEN, TOKENS)
+#define js_parser_type(TOKEN, TYPE) (self->token->type == TYPE)
+#define js_parser_type_not(TOKEN, TYPE) (self->token->type != TYPE)
+#define js_parser_error(TOKEN, MSG) (struct js_node_t*) js_node_error_new(strdup(MSG), (self->token->word ? strdup(self->token->word) : strdup("<EOF>")), self->token->line, self->token->column, self->token->line, self->token->column + (self->token->word ? strlen(self->token->word) : 0))
 
 struct js_parser_t* js_parser_new(struct js_token_t* tokens) {
     struct js_parser_t* self = (struct js_parser_t*) malloc(sizeof(struct js_parser_t));
@@ -25,27 +26,106 @@ void js_parser_free(struct js_parser_t* self) {
     free(self);
 }
 
-struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self, struct js_token_t** tokens);
+struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self);
 
-struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self, struct js_token_t** tokens);
+struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self);
 
-struct js_node_t* js_parser_compound_statement(struct js_parser_t* self, struct js_token_t** tokens);
+struct js_node_t* js_parser_compound_statement(struct js_parser_t* self);
 
-struct js_node_t* js_parser_expression_assignment(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
+    if (js_parser_type(token, '(')) {
+        js_parser_next(token, tokens);
+        
+        struct js_node_t* expression = js_parser_expression_nullable(self);
+        if (!expression) return 0;
+        js_parser_token_get(token, tokens);
+        
+        if (js_parser_type_not(token, ')')) {
+            js_node_free(expression);
+            return 0;
+        }
+        js_parser_next(token, tokens);
+    } else if (js_parser_type_not(token, JS_TOKEN_ID)) {
+        
+    }
     return 0;
 }
 
-struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
     return 0;
 }
 
-struct js_node_t* js_parser_statement_condition_nullable(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_expression_constructor_call(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_constructor(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_relational(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_bitwise_and(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_bitwise_xor(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_bitwise_or(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_and(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_or(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_assignment(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self) {
+    return 0;
+}
+
+struct js_node_t* js_parser_statement_condition_nullable(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     
     if (js_parser_type_not(token, '(')) return 0;
     js_parser_next(token, tokens);
     
-    struct js_node_t* expression = js_parser_expression_nullable(self, tokens);
+    struct js_node_t* expression = js_parser_expression_nullable(self);
     if (!expression) return 0;
     js_parser_token_get(token, tokens);
     
@@ -55,20 +135,20 @@ struct js_node_t* js_parser_statement_condition_nullable(struct js_parser_t* sel
     return expression;
 }
 
-struct js_node_t* js_parser_statement_if(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_statement_if(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     if (js_parser_type_not(token, JS_TOKEN_IF)) {
         return js_parser_error(token, "statement if: 'if' expected");
     }
     js_parser_next(token, tokens);
     
-    struct js_node_t* expression = js_parser_statement_condition_nullable(self, tokens);
+    struct js_node_t* expression = js_parser_statement_condition_nullable(self);
     if (!expression) {
         return js_parser_error(token, "statement if: if '( <expression> )' expected");
     }
     js_parser_token_get(token, tokens);
     
-    struct js_node_t* statement = js_parser_statement_nullable(self, tokens);
+    struct js_node_t* statement = js_parser_statement_nullable(self);
     if (!statement) {
         js_node_free(expression);
         return js_parser_error(token, "statement if: if ( <expression> ) '<statement>' expected");
@@ -78,7 +158,7 @@ struct js_node_t* js_parser_statement_if(struct js_parser_t* self, struct js_tok
     if (js_parser_type(token, JS_TOKEN_ELSE)) {
         js_parser_next(token, tokens);
         
-        else_expression = js_parser_expression_nullable(self, tokens);
+        else_expression = js_parser_expression_nullable(self);
         if (!else_expression) {
             js_node_free(expression);
             js_node_free(statement);
@@ -90,20 +170,20 @@ struct js_node_t* js_parser_statement_if(struct js_parser_t* self, struct js_tok
     return (struct js_node_t*) js_node_if_new(expression, statement);
 }
 
-struct js_node_t* js_parser_statement_while(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_statement_while(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     if (js_parser_type_not(token, JS_TOKEN_WHILE)) {
         return js_parser_error(token, "statement while: 'while' expected");
     }
     js_parser_next(token, tokens);
     
-    struct js_node_t* expression = js_parser_statement_condition_nullable(self, tokens);
+    struct js_node_t* expression = js_parser_statement_condition_nullable(self);
     if (!expression) {
         return js_parser_error(token, "statement while: while '( <expression> )' expected");
     }
     js_parser_token_get(token, tokens);
     
-    struct js_node_t* statement = js_parser_statement_nullable(self, tokens);
+    struct js_node_t* statement = js_parser_statement_nullable(self);
     if (!statement) {
         js_node_free(expression);
         return js_parser_error(token, "statement while: while ( <expression> ) '<statement>' expected");
@@ -112,7 +192,7 @@ struct js_node_t* js_parser_statement_while(struct js_parser_t* self, struct js_
     return (struct js_node_t*) js_node_while_new(expression, statement);
 }
 
-struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     if (js_parser_type(token, ';')) {
         js_parser_next(token, tokens);
@@ -130,16 +210,16 @@ struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self, struct 
         }
         return (struct js_node_t*) js_node_continue_new();
     } else if (js_parser_type(token, '{')) {
-        return js_parser_compound_statement(self, tokens);
+        return js_parser_compound_statement(self);
     } else if (js_parser_type(token, JS_TOKEN_IF)) {
-        return js_parser_statement_if(self, tokens);
+        return js_parser_statement_if(self);
     } else if (js_parser_type(token, JS_TOKEN_WHILE)) {
-        return js_parser_statement_while(self, tokens);
+        return js_parser_statement_while(self);
     }
     return 0;
 }
 
-struct js_node_t* js_parser_compound_statement(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_compound_statement(struct js_parser_t* self) {
     js_node_def();
     js_parser_token(token, tokens);
     
@@ -149,7 +229,7 @@ struct js_node_t* js_parser_compound_statement(struct js_parser_t* self, struct 
     js_parser_next(token, tokens);
     
     while (js_parser_type_not(token, '}')) {
-        struct js_node_t* node = js_parser_statement_nullable(self, tokens);
+        struct js_node_t* node = js_parser_statement_nullable(self);
         if (!node) {
             js_nodes_free(head);
             return js_parser_error(token, "compound statement: { '<statement>' expected");
@@ -165,13 +245,13 @@ struct js_node_t* js_parser_compound_statement(struct js_parser_t* self, struct 
     return head;
 }
 
-struct js_node_t* js_parser_parameter_list(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
     js_node_def();
     js_parser_token(token, tokens);
     if (js_parser_type_not(token, JS_TOKEN_ID)) {
         return js_parser_error(token, "parameter list: '<id>' expected");
     }
-    struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(token->word));
+    struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
     js_node_add(node);
     js_parser_next(token, tokens);
     while (js_parser_type(token, ',')) {
@@ -180,20 +260,20 @@ struct js_node_t* js_parser_parameter_list(struct js_parser_t* self, struct js_t
             js_nodes_free(head);
             return js_parser_error(token, "parameter list: '<id>' expected");
         }
-        node = (struct js_node_t*) js_node_id_new(strdup(token->word));
+        node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
         js_node_add(node);
         js_parser_next(token, tokens);
     }
     return head;
 }
 
-struct js_node_t* js_parser_parameter_list_opt(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     if (js_parser_type_not(token, JS_TOKEN_ID)) return 0;
-    return js_parser_parameter_list(self, tokens);
+    return js_parser_parameter_list(self);
 }
 
-struct js_node_t* js_parser_element_nullable(struct js_parser_t* self, struct js_token_t** tokens) {
+struct js_node_t* js_parser_element_nullable(struct js_parser_t* self) {
     js_parser_token(token, tokens);
     if (js_parser_type(token, JS_TOKEN_FUNCTION)) {
         js_parser_next(token, tokens);
@@ -201,7 +281,7 @@ struct js_node_t* js_parser_element_nullable(struct js_parser_t* self, struct js
         if (js_parser_type_not(token, JS_TOKEN_ID)) {
             return js_parser_error(token, "element: function '<id>' expected");
         }
-        struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(token->word));
+        struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
         js_parser_next(token, tokens);
         
         if (js_parser_type_not(token, '(')) {
@@ -210,7 +290,7 @@ struct js_node_t* js_parser_element_nullable(struct js_parser_t* self, struct js
         }
         js_parser_next(token, tokens);
         
-        struct js_node_t* parameters = js_parser_parameter_list_opt(self, tokens);
+        struct js_node_t* parameters = js_parser_parameter_list_opt(self);
         if (parameters && js_node_has_error(parameters)) {
             js_node_free(node);
             return parameters;
@@ -224,7 +304,7 @@ struct js_node_t* js_parser_element_nullable(struct js_parser_t* self, struct js
         }
         js_parser_next(token, tokens);
 
-        struct js_node_t* statements = js_parser_compound_statement(self, tokens);
+        struct js_node_t* statements = js_parser_compound_statement(self);
         if (statements && js_node_has_error(statements)) {
             js_node_free(node);
             js_node_free(parameters);
@@ -233,19 +313,20 @@ struct js_node_t* js_parser_element_nullable(struct js_parser_t* self, struct js
 
         return (struct js_node_t*) js_node_function_new(node, parameters, statements);
     } else {
-        return js_parser_statement_nullable(self, tokens);
+        return js_parser_statement_nullable(self);
     }
 }
 
-struct js_node_t* js_parser_program(struct js_parser_t* self, struct js_token_t** tokens) {
-    struct js_node_t* element = js_parser_element_nullable(self, tokens);
+struct js_node_t* js_parser_program(struct js_parser_t* self) {
+    struct js_node_t* element = js_parser_element_nullable(self);
     if (!element) return 0;
-    element->next = js_parser_program(self, tokens);
+    element->next = js_parser_program(self);
     return element;
 }
 
 struct js_node_t* js_parser(struct js_parser_t* self, struct js_token_t* tokens) {
-    return js_parser_program(self, &tokens);
+    js_parser_skip_comment();
+    return js_parser_program(self);
 }
 
 //  Statement:
