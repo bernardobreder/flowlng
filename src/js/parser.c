@@ -6,14 +6,14 @@
 
 #define js_node_def() struct js_node_t *head = 0, *tail = 0
 #define js_node_add(NODE) { if (tail) { tail->next = NODE; } else { head = NODE; } } tail = NODE;
-#define js_parser_token(TOKEN, TOKENS)
-#define js_parser_step(TOKEN, TOKENS) self->token = self->token->next;
-#define js_parser_skip_comment() while (js_parser_type(token, JS_TOKEN_COMMENT)) { js_parser_step(TOKEN, TOKENS); }
-#define js_parser_next(TOKEN, TOKENS) js_parser_step(TOKEN, TOKENS); js_parser_skip_comment();
-#define js_parser_token_get(TOKEN, TOKENS)
-#define js_parser_type(TOKEN, TYPE) (self->token->type == TYPE)
-#define js_parser_type_not(TOKEN, TYPE) (self->token->type != TYPE)
-#define js_parser_error(TOKEN, MSG) (struct js_node_t*) js_node_error_new(strdup(MSG), (self->token->word ? strdup(self->token->word) : strdup("<EOF>")), self->token->line, self->token->column, self->token->line, self->token->column + (self->token->word ? strlen(self->token->word) : 0))
+#define js_parser_token()
+#define js_parser_step() self->token = self->token->next;
+#define js_parser_skip_comment() while (js_parser_type(JS_TOKEN_COMMENT)) { js_parser_step(); }
+#define js_parser_next() js_parser_step(); js_parser_skip_comment();
+#define js_parser_token_get()
+#define js_parser_type(TYPE) (self->token->type == TYPE)
+#define js_parser_type_not(TYPE) (self->token->type != TYPE)
+#define js_parser_error(MSG) (struct js_node_t*) js_node_error_new(strdup(MSG), (self->token->word ? strdup(self->token->word) : strdup("<EOF>")), self->token->line, self->token->column, self->token->line, self->token->column + (self->token->word ? strlen(self->token->word) : 0))
 
 struct js_parser_t* js_parser_new(struct js_token_t* tokens) {
     struct js_parser_t* self = (struct js_parser_t*) malloc(sizeof(struct js_parser_t));
@@ -33,19 +33,19 @@ struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self);
 struct js_node_t* js_parser_compound_statement(struct js_parser_t* self);
 
 struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
-    if (js_parser_type(token, '(')) {
-        js_parser_next(token, tokens);
+    if (js_parser_type('(')) {
+        js_parser_next();
         
         struct js_node_t* expression = js_parser_expression_nullable(self);
         if (!expression) return 0;
-        js_parser_token_get(token, tokens);
+        js_parser_token_get();
         
-        if (js_parser_type_not(token, ')')) {
+        if (js_parser_type_not(')')) {
             js_node_free(expression);
             return 0;
         }
-        js_parser_next(token, tokens);
-    } else if (js_parser_type_not(token, JS_TOKEN_ID)) {
+        js_parser_next();
+    } else if (js_parser_type_not(JS_TOKEN_ID)) {
         
     }
     return 0;
@@ -120,100 +120,100 @@ struct js_node_t* js_parser_expression_nullable(struct js_parser_t* self) {
 }
 
 struct js_node_t* js_parser_statement_condition_nullable(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
+    js_parser_token();
     
-    if (js_parser_type_not(token, '(')) return 0;
-    js_parser_next(token, tokens);
+    if (js_parser_type_not('(')) return 0;
+    js_parser_next();
     
     struct js_node_t* expression = js_parser_expression_nullable(self);
     if (!expression) return 0;
-    js_parser_token_get(token, tokens);
+    js_parser_token_get();
     
-    if (js_parser_type_not(token, ')')) return 0;
-    js_parser_next(token, tokens);
+    if (js_parser_type_not(')')) return 0;
+    js_parser_next();
     
     return expression;
 }
 
 struct js_node_t* js_parser_statement_if(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
-    if (js_parser_type_not(token, JS_TOKEN_IF)) {
-        return js_parser_error(token, "statement if: 'if' expected");
+    js_parser_token();
+    if (js_parser_type_not(JS_TOKEN_IF)) {
+        return js_parser_error("statement if: 'if' expected");
     }
-    js_parser_next(token, tokens);
+    js_parser_next();
     
     struct js_node_t* expression = js_parser_statement_condition_nullable(self);
     if (!expression) {
-        return js_parser_error(token, "statement if: if '( <expression> )' expected");
+        return js_parser_error("statement if: if '( <expression> )' expected");
     }
-    js_parser_token_get(token, tokens);
+    js_parser_token_get();
     
     struct js_node_t* statement = js_parser_statement_nullable(self);
     if (!statement) {
         js_node_free(expression);
-        return js_parser_error(token, "statement if: if ( <expression> ) '<statement>' expected");
+        return js_parser_error("statement if: if ( <expression> ) '<statement>' expected");
     }
     
     struct js_node_t* else_expression = 0;
-    if (js_parser_type(token, JS_TOKEN_ELSE)) {
-        js_parser_next(token, tokens);
+    if (js_parser_type(JS_TOKEN_ELSE)) {
+        js_parser_next();
         
         else_expression = js_parser_expression_nullable(self);
         if (!else_expression) {
             js_node_free(expression);
             js_node_free(statement);
-            return js_parser_error(token, "statement if: if ( <expression> ) <statement> else '<expression>' expected");
+            return js_parser_error("statement if: if ( <expression> ) <statement> else '<expression>' expected");
         }
-        js_parser_token_get(token, tokens);
+        js_parser_token_get();
     }
     
     return (struct js_node_t*) js_node_if_new(expression, statement);
 }
 
 struct js_node_t* js_parser_statement_while(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
-    if (js_parser_type_not(token, JS_TOKEN_WHILE)) {
-        return js_parser_error(token, "statement while: 'while' expected");
+    js_parser_token();
+    if (js_parser_type_not(JS_TOKEN_WHILE)) {
+        return js_parser_error("statement while: 'while' expected");
     }
-    js_parser_next(token, tokens);
+    js_parser_next();
     
     struct js_node_t* expression = js_parser_statement_condition_nullable(self);
     if (!expression) {
-        return js_parser_error(token, "statement while: while '( <expression> )' expected");
+        return js_parser_error("statement while: while '( <expression> )' expected");
     }
-    js_parser_token_get(token, tokens);
+    js_parser_token_get();
     
     struct js_node_t* statement = js_parser_statement_nullable(self);
     if (!statement) {
         js_node_free(expression);
-        return js_parser_error(token, "statement while: while ( <expression> ) '<statement>' expected");
+        return js_parser_error("statement while: while ( <expression> ) '<statement>' expected");
     }
     
     return (struct js_node_t*) js_node_while_new(expression, statement);
 }
 
 struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
-    if (js_parser_type(token, ';')) {
-        js_parser_next(token, tokens);
+    js_parser_token();
+    if (js_parser_type(';')) {
+        js_parser_next();
         return (struct js_node_t*) js_node_empty_new();
-    } else if (js_parser_type(token, JS_TOKEN_BREAK)) {
-        js_parser_next(token, tokens);
-        if (js_parser_type(token, ';')) {
-            js_parser_next(token, tokens);
+    } else if (js_parser_type(JS_TOKEN_BREAK)) {
+        js_parser_next();
+        if (js_parser_type(';')) {
+            js_parser_next();
         }
         return (struct js_node_t*) js_node_break_new();
-    } else if (js_parser_type(token, JS_TOKEN_CONTINUE)) {
-        js_parser_next(token, tokens);
-        if (js_parser_type(token, ';')) {
-            js_parser_next(token, tokens);
+    } else if (js_parser_type(JS_TOKEN_CONTINUE)) {
+        js_parser_next();
+        if (js_parser_type(';')) {
+            js_parser_next();
         }
         return (struct js_node_t*) js_node_continue_new();
-    } else if (js_parser_type(token, '{')) {
+    } else if (js_parser_type('{')) {
         return js_parser_compound_statement(self);
-    } else if (js_parser_type(token, JS_TOKEN_IF)) {
+    } else if (js_parser_type(JS_TOKEN_IF)) {
         return js_parser_statement_if(self);
-    } else if (js_parser_type(token, JS_TOKEN_WHILE)) {
+    } else if (js_parser_type(JS_TOKEN_WHILE)) {
         return js_parser_statement_while(self);
     }
     return 0;
@@ -221,88 +221,88 @@ struct js_node_t* js_parser_statement_nullable(struct js_parser_t* self) {
 
 struct js_node_t* js_parser_compound_statement(struct js_parser_t* self) {
     js_node_def();
-    js_parser_token(token, tokens);
+    js_parser_token();
     
-    if (js_parser_type_not(token, '{')) {
-        return js_parser_error(token, "compound statement: '{' expected");
+    if (js_parser_type_not('{')) {
+        return js_parser_error("compound statement: '{' expected");
     }
-    js_parser_next(token, tokens);
+    js_parser_next();
     
-    while (js_parser_type_not(token, '}')) {
+    while (js_parser_type_not('}')) {
         struct js_node_t* node = js_parser_statement_nullable(self);
         if (!node) {
             js_nodes_free(head);
-            return js_parser_error(token, "compound statement: { '<statement>' expected");
+            return js_parser_error("compound statement: { '<statement>' expected");
         }
-        js_parser_token_get(token, tokens);
+        js_parser_token_get();
         js_node_add(node);
     }
     
-    if (js_parser_type_not(token, '}')) {
-        return js_parser_error(token, "compound statement: '}' expected");
+    if (js_parser_type_not('}')) {
+        return js_parser_error("compound statement: '}' expected");
     }
-    js_parser_next(token, tokens);
+    js_parser_next();
     return head;
 }
 
 struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
     js_node_def();
-    js_parser_token(token, tokens);
-    if (js_parser_type_not(token, JS_TOKEN_ID)) {
-        return js_parser_error(token, "parameter list: '<id>' expected");
+    js_parser_token();
+    if (js_parser_type_not(JS_TOKEN_ID)) {
+        return js_parser_error("parameter list: '<id>' expected");
     }
     struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
     js_node_add(node);
-    js_parser_next(token, tokens);
-    while (js_parser_type(token, ',')) {
-        js_parser_next(token, tokens);
-        if (js_parser_type_not(token, JS_TOKEN_ID)) {
+    js_parser_next();
+    while (js_parser_type(',')) {
+        js_parser_next();
+        if (js_parser_type_not(JS_TOKEN_ID)) {
             js_nodes_free(head);
-            return js_parser_error(token, "parameter list: '<id>' expected");
+            return js_parser_error("parameter list: '<id>' expected");
         }
         node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
         js_node_add(node);
-        js_parser_next(token, tokens);
+        js_parser_next();
     }
     return head;
 }
 
 struct js_node_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
-    if (js_parser_type_not(token, JS_TOKEN_ID)) return 0;
+    js_parser_token();
+    if (js_parser_type_not(JS_TOKEN_ID)) return 0;
     return js_parser_parameter_list(self);
 }
 
 struct js_node_t* js_parser_element_nullable(struct js_parser_t* self) {
-    js_parser_token(token, tokens);
-    if (js_parser_type(token, JS_TOKEN_FUNCTION)) {
-        js_parser_next(token, tokens);
+    js_parser_token();
+    if (js_parser_type(JS_TOKEN_FUNCTION)) {
+        js_parser_next();
 
-        if (js_parser_type_not(token, JS_TOKEN_ID)) {
-            return js_parser_error(token, "element: function '<id>' expected");
+        if (js_parser_type_not(JS_TOKEN_ID)) {
+            return js_parser_error("element: function '<id>' expected");
         }
         struct js_node_t* node = (struct js_node_t*) js_node_id_new(strdup(self->token->word));
-        js_parser_next(token, tokens);
+        js_parser_next();
         
-        if (js_parser_type_not(token, '(')) {
+        if (js_parser_type_not('(')) {
             js_node_free(node);
-            return js_parser_error(token, "element: function <id> '(' expected");
+            return js_parser_error("element: function <id> '(' expected");
         }
-        js_parser_next(token, tokens);
+        js_parser_next();
         
         struct js_node_t* parameters = js_parser_parameter_list_opt(self);
         if (parameters && js_node_has_error(parameters)) {
             js_node_free(node);
             return parameters;
         }
-        js_parser_token_get(token, tokens);
+        js_parser_token_get();
 
-        if (js_parser_type_not(token, ')')) {
+        if (js_parser_type_not(')')) {
             js_node_free(node);
             js_node_free(parameters);
-            return js_parser_error(token, "element: function <id> ( <parameter_list> ')' expected");
+            return js_parser_error("element: function <id> ( <parameter_list> ')' expected");
         }
-        js_parser_next(token, tokens);
+        js_parser_next();
 
         struct js_node_t* statements = js_parser_compound_statement(self);
         if (statements && js_node_has_error(statements)) {
