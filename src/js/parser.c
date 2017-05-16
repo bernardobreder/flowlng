@@ -89,7 +89,7 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
         js_parser_next();
         return node;
     } else if (js_parser_type(JS_TOKEN_NUMBER)) {
-        if (strchr(js_parser_word(), '.') >= 0) {
+        if (strchr(js_parser_word(), '.')) {
             double value;
             sscanf(js_parser_word(), "%lf", &value);
             struct js_node_t* node = (struct js_node_t*) js_node_num_new(value);

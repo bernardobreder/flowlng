@@ -87,13 +87,45 @@ int eval_func(struct flow_argument_t* arg_node) {
         struct js_node_t* node = js_parser(parser, tokens);
         js_parser_free(parser);
         js_tokens_free(tokens);
-        struct js_node_t* aux = node;
-        while (aux) {
-            if (js_node_error_is(aux)) {
-                js_node_error_print(js_node_error_revert(js_node_error_type(aux)));
+        {
+            struct js_node_t* aux = node;
+            while (aux) {
+                if (js_node_error_is(aux)) js_node_error_print(js_node_error_revert(js_node_error_type(aux)));
+                aux = aux->next;
             }
-            aux = aux->next;
         }
+        {
+            struct js_node_t* aux = node;
+            while (aux) {
+                if (js_node_error_is_not(aux)) js_node_head(aux);
+                aux = aux->next;
+            }
+        }
+        {
+            struct js_node_t* aux = node;
+            while (aux) {
+                if (js_node_error_is_not(aux)) js_node_body(aux);
+                aux = aux->next;
+            }
+        }
+        struct js_context_t* context = js_context_new();
+        {
+            struct js_node_t* aux = node;
+            while (aux) {
+                if (js_node_error_is_not(aux)) {
+                    js_node_exec(aux, context);
+                    if (!js_context_empty(context)) {
+                        struct js_value_t* value = js_context_pop(context);
+                        char* chars = js_value_object_string_ansi(value);
+                        printf("%s\n", chars);
+                        free(chars);
+                        //flow_memory_item_free(value);
+                    }
+                }
+                aux = aux->next;
+            }
+        }
+        js_context_free(context);
         js_node_free(node);
         arg = arg->next;
     }
