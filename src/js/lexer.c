@@ -28,9 +28,13 @@ struct js_token_t* js_lexer(const char* text) {
                 else if (!strncmp(word, "if", 2)) type = JS_TOKEN_IF;
             } else if (size == 3) {
                 if (!strncmp(word, "for", 3)) type = JS_TOKEN_FOR;
+                else if (!strncmp(word, "var", 3)) type = JS_TOKEN_VAR;
+                else if (!strncmp(word, "end", 3)) type = JS_TOKEN_END;
             } else if (size == 4) {
                 if (!strncmp(word, "true", 4)) type = JS_TOKEN_TRUE;
                 else if (!strncmp(word, "else", 4)) type = JS_TOKEN_ELSE;
+                else if (!strncmp(word, "null", 4)) type = JS_TOKEN_NULL;
+                else if (!strncmp(word, "super", 4)) type = JS_TOKEN_SUPER;
             } else if (size == 5) {
                 if (!strncmp(word, "false", 5)) type = JS_TOKEN_FALSE;
                 else if (!strncmp(word, "while", 5)) type = JS_TOKEN_WHILE;
@@ -46,7 +50,7 @@ struct js_token_t* js_lexer(const char* text) {
             
             struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = type;
-            token->word = type == JS_TOKEN_ID ? strndup(word, size) : 0;
+            token->word = strndup(word, size);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -185,7 +189,7 @@ struct js_token_t* js_lexer(const char* text) {
 		} else {
 			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
 			token->type = c;
-            token->word = 0;
+            token->word = strndup(pc, 1);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -199,9 +203,9 @@ struct js_token_t* js_lexer(const char* text) {
     {
         struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
         token->type = JS_TOKEN_EOF;
-        token->word = 0;
-        token->line = -1;
-        token->column = -1;
+        token->word = strdup("<EOF>");
+        token->line = lin;
+        token->column = col;
         token->next = 0;
         
         if (tail) tail->next = token;

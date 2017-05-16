@@ -1,10 +1,18 @@
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
 #include "main.h"
 #include "watch.h"
 #include "file.h"
 #include "input.h"
+#include "linkedlist.h"
+#include "js.h"
+
+struct flow_argument_t {
+    char* value;
+    struct flow_argument_t* next;
+};
 
 // --signal SIGKILL \
     
@@ -71,9 +79,32 @@ int help_func() {
     return 0;
 }
 
-int exec_func(int test_mode, int help_mode) {
+int eval_func(struct flow_argument_t* arg_node) {
+    struct flow_argument_t* arg = arg_node;
+    while (arg) {
+        struct js_token_t* tokens = js_lexer(arg->value);
+        struct js_parser_t* parser = js_parser_new(tokens);
+        struct js_node_t* node = js_parser(parser, tokens);
+        js_parser_free(parser);
+        js_tokens_free(tokens);
+        struct js_node_t* aux = node;
+        while (aux) {
+            if (js_node_error_is(aux)) {
+                js_node_error_print(js_node_error_revert(js_node_error_type(aux)));
+            }
+            aux = aux->next;
+        }
+        js_node_free(node);
+        arg = arg->next;
+    }
+    return 0;
+}
+
+int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_t* arg_node) {
     if (test_mode) {
         test();
+    } else if (eval_mode) {
+        eval_func(arg_node);
     } else if (help_mode) {
         help_func();
     } else {
@@ -87,18 +118,27 @@ int exec_func(int test_mode, int help_mode) {
 }
 
 int main(int argc, char **argv) {
-    int test_mode = 0, help_mode = 0, loop_mode = 0;
+    int test_mode = 0, help_mode = 0, eval_mode = 0, loop_mode = 0;
+    flow_linkedlist_inline_new(arg_head, arg_tail, struct flow_argument_t);
     int i;
     for (i = 1 ; i < argc ; i++) {
         char *arg = argv[i];
         if (!strcmp(arg, "-l") || !strcmp(arg, "--loop")) { loop_mode = 1; }
         else if (!strcmp(arg, "-t") || !strcmp(arg, "--test")) { test_mode = 1; }
+        else if (!strcmp(arg, "-e") || !strcmp(arg, "--eval")) { eval_mode = 1; }
         else if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) { help_mode = 1; }
+        else if (arg[0] == '-') {}
+        else {
+            struct flow_argument_t* arg_node = (struct flow_argument_t*) malloc(sizeof(struct flow_argument_t));
+            arg_node->value = strdup(arg);
+            arg_node->next = 0;
+            flow_linkedlist_inline_add(arg_head, arg_tail, arg_node);
+        }
     }
     
     if (loop_mode) {
         for (;;) {
-            exec_func(test_mode, help_mode);
+            exec_func(test_mode, eval_mode, help_mode, arg_head);
         }
-    } else return exec_func(test_mode, help_mode);
+    } else return exec_func(test_mode, eval_mode, help_mode, arg_head);
 }
