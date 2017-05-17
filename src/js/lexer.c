@@ -29,7 +29,7 @@ struct js_token_t* js_lexer(const char* text) {
                 else if (!strcmp2(word, "if")) type = JS_TOKEN_IF;
                 else if (!strcmp2(word, "or")) type = JS_TOKEN_OR;
             } else if (size == 3) {
-                if (!strcmp3(word, "for", 3)) type = JS_TOKEN_FOR;
+                if (!strcmp3(word, "for")) type = JS_TOKEN_FOR;
                 else if (!strcmp3(word, "var")) type = JS_TOKEN_VAR;
                 else if (!strcmp3(word, "end")) type = JS_TOKEN_END;
                 else if (!strcmp3(word, "and")) type = JS_TOKEN_AND;

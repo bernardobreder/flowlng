@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include <stddef.h>
 #include "platform.h"
 #include "memory.h"
 
@@ -94,7 +95,8 @@
 typedef unsigned char js_bool;
 typedef double js_num;
 typedef long js_int;
-typedef char* js_str;
+typedef char js_char;
+typedef js_char* js_str;
 typedef uint64 js_hash;
 typedef void* js_obj;
 
@@ -162,7 +164,7 @@ struct js_value_obj_entry_t {
     size_t length;
     js_hash hash;
     struct js_value_t* value;
-}
+};
 
 struct js_value_obj_t {
     unsigned char type;
@@ -176,7 +178,7 @@ struct js_value_obj_t {
     struct js_value_func_t* clone_func;
     struct js_value_func_t* equal_func;
     struct js_value_str_t* class_str;
-}
+};
 
 struct js_node_t {
     unsigned char type;
@@ -542,7 +544,7 @@ struct js_value_t* js_value_int_new(struct flow_memory_t* memory, js_int value);
 struct js_value_t* js_value_num_new(struct flow_memory_t* memory, js_num value);
 struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
-struct js_value_t* js_value_obj_new(struct flow_memory_t* memory);
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str);
 void js_value_obj_free(struct js_value_str_t* self);
 struct js_value_t* js_value_func_new(struct flow_memory_t* memory);
 void js_value_func_free(struct js_value_str_t* self);

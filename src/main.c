@@ -1,7 +1,8 @@
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <signal.h>
+#include <string.h>
 #include "main.h"
 #include "watch.h"
 #include "file.h"
@@ -142,11 +143,11 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
     } else if (help_mode) {
         help_func();
     } else {
-        printf("Creating watch\n");
-        struct watch_t* watch = watch_new();
-        watch_dir(watch, "/Users/bernardobreder/git/flowlng/src");
-        watch_loop(watch, (void (*)(char*, flow_watch_event_t))flow_input_perform);
-        watch_free(watch);
+        //printf("Creating watch\n");
+        //struct watch_t* watch = watch_new();
+        //watch_dir(watch, "/Users/bernardobreder/git/flowlng/src");
+        //watch_loop(watch, (void (*)(char*, flow_watch_event_t))flow_input_perform);
+        //watch_free(watch);
     }
     return 0;
 }

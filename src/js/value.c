@@ -64,7 +64,7 @@ void js_value_str_free(struct js_value_str_t* self) {
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, js_value_str_t* class_str) {
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str) {
     struct js_value_obj_t* self = flow_memory_alloc_typed(memory, struct js_value_obj_t);
     self->type = JS_VALUE_OBJ;
     self->next = 0;

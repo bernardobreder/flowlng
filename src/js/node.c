@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <alloca.h>
 #include <stdio.h>
 #include <string.h>
 #include "platform.h"
@@ -1287,7 +1286,7 @@ void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) 
         js_value_str_len_def(str_len_left, left);
         js_value_str_len_def(str_len_right, right);
         size_t length = str_len_left + str_len_right;
-        js_str buffer = (js_str) alloca(length + 1);
+        js_char buffer[length + 1];
         strncpy(buffer, str_left, str_len_left);
         strncpy(buffer + str_len_left, str_right, str_len_right);
         buffer[length] = 0;
