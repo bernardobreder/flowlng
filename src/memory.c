@@ -17,6 +17,6 @@ void* flow_memory_alloc(struct flow_memory_t* self, int size) {
 }
 
 void flow_memory_item_free(void* self) {
-    struct flow_memory_item_t* data = self - 1;
+    struct flow_memory_item_t* data = ((struct flow_memory_item_t*)self) - 1;
     free(data);
 }

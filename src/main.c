@@ -80,6 +80,7 @@ int help_func() {
 }
 
 int eval_func(struct flow_argument_t* arg_node) {
+    struct flow_memory_t* memory = flow_memory_new();
     struct flow_argument_t* arg = arg_node;
     while (arg) {
         struct js_token_t* tokens = js_lexer(arg->value);
@@ -108,7 +109,7 @@ int eval_func(struct flow_argument_t* arg_node) {
                 aux = aux->next;
             }
         }
-        struct js_context_t* context = js_context_new();
+        struct js_context_t* context = js_context_new(memory);
         {
             struct js_node_t* aux = node;
             while (aux) {
@@ -119,7 +120,7 @@ int eval_func(struct flow_argument_t* arg_node) {
                         char* chars = js_value_object_string_ansi(value);
                         printf("%s\n", chars);
                         free(chars);
-                        //flow_memory_item_free(value);
+                        js_value_free(value);
                     }
                 }
                 aux = aux->next;
@@ -129,6 +130,7 @@ int eval_func(struct flow_argument_t* arg_node) {
         js_node_free(node);
         arg = arg->next;
     }
+    flow_memory_free(memory);
     return 0;
 }
 

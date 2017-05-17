@@ -1,9 +1,11 @@
 #include <stdlib.h>
+#include "memory.h"
 #include "js.h"
 
-struct js_context_t* js_context_new() {
+struct js_context_t* js_context_new(struct flow_memory_t* memory) {
     struct js_context_t* self = (struct js_context_t*) malloc(sizeof(struct js_context_t));
     self->value = 0;
+    self->memory = memory;
     return self;
 }
 

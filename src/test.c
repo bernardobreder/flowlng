@@ -15,4 +15,5 @@
 void test() {        
     test_js_lexer();
     test_js_parser();
+    test_js_node();
 }

@@ -26,10 +26,14 @@ struct js_token_t* js_lexer(const char* text) {
             if (size == 2) {
                 if (!strncmp(word, "do", 2)) type = JS_TOKEN_DO;
                 else if (!strncmp(word, "if", 2)) type = JS_TOKEN_IF;
+                else if (!strncmp(word, "or", 2)) type = JS_TOKEN_OR;
             } else if (size == 3) {
                 if (!strncmp(word, "for", 3)) type = JS_TOKEN_FOR;
                 else if (!strncmp(word, "var", 3)) type = JS_TOKEN_VAR;
                 else if (!strncmp(word, "end", 3)) type = JS_TOKEN_END;
+                else if (!strncmp(word, "and", 3)) type = JS_TOKEN_AND;
+                else if (!strncmp(word, "xor", 3)) type = JS_TOKEN_XOR;
+                else if (!strncmp(word, "pow", 3)) type = JS_TOKEN_POW;
             } else if (size == 4) {
                 if (!strncmp(word, "true", 4)) type = JS_TOKEN_TRUE;
                 else if (!strncmp(word, "else", 4)) type = JS_TOKEN_ELSE;
@@ -39,8 +43,10 @@ struct js_token_t* js_lexer(const char* text) {
                 if (!strncmp(word, "false", 5)) type = JS_TOKEN_FALSE;
                 else if (!strncmp(word, "while", 5)) type = JS_TOKEN_WHILE;
                 else if (!strncmp(word, "break", 5)) type = JS_TOKEN_BREAK;
+                else if (!strncmp(word, "bitor", 5)) type = JS_TOKEN_BITOR;
             } else if (size == 6) {
                 if (!strncmp(word, "return", 6)) type = JS_TOKEN_RETURN;
+                else if (!strncmp(word, "bitand", 6)) type = JS_TOKEN_BITAND;
             } else if (size == 7) {
                 if (!strncmp(word, "require", 7)) type = JS_TOKEN_REQUIRE;
             } else if (size == 8) {
@@ -87,10 +93,10 @@ struct js_token_t* js_lexer(const char* text) {
 			pc--;
 		} else if (c == '\"' || c == '\'') {
 			unsigned short type = JS_TOKEN_STRING;
-			long begin = pc - text;
 			c = *(++pc);
-			col++;
-			while ((c != '\"' && c != '\'') || (pc != text && pc[-1] == '\\')) {
+            col++;
+            long begin = pc - text;
+            while ((c != '\"' && c != '\'') || (pc != text && pc[-1] == '\\')) {
 				if (c <= 0x7F) {
 					if (c == '\n') {
 						lin++;

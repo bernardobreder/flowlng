@@ -14,6 +14,7 @@
 #define JS_TOKEN_REQUIRE 273
 #define JS_TOKEN_IF 274
 #define JS_TOKEN_OR 275
+#define JS_TOKEN_AND 290
 #define JS_TOKEN_TRUE 276
 #define JS_TOKEN_WHILE 277
 #define JS_TOKEN_RETURN 278
@@ -27,6 +28,12 @@
 #define JS_TOKEN_NULL 286
 #define JS_TOKEN_VAR 287
 #define JS_TOKEN_END 289
+#define JS_TOKEN_XOR 291
+#define JS_TOKEN_POW 292
+#define JS_TOKEN_BITOR 293
+#define JS_TOKEN_BITAND 294
+#define JS_TOKEN_LSHIFT 295
+#define JS_TOKEN_RSHIFT 296
 
 #define JS_NODE_ERROR 1
 #define JS_NODE_ID 2
@@ -46,12 +53,47 @@
 #define JS_NODE_SUPER 16
 #define JS_NODE_RETURN 17
 #define JS_NODE_VAR_ITEM 18
+#define JS_NODE_ASSIGNMENT 19
+#define JS_NODE_TERNARY 20
+#define JS_NODE_OR 21
+#define JS_NODE_AND 22
+#define JS_NODE_BITWISE_OR 23
+#define JS_NODE_BITWISE_XOR 24
+#define JS_NODE_BITWISE_AND 25
+#define JS_NODE_EQUAL 26
+#define JS_NODE_NOT_EQUAL 27
+#define JS_NODE_LOWER_EQUAL 28
+#define JS_NODE_GREATER_EQUAL 29
+#define JS_NODE_LOWER_THAN 30
+#define JS_NODE_GREATER_THAN 31
+#define JS_NODE_SHIFT_LEFT 32
+#define JS_NODE_SHIFT_RIGHT 33
+#define JS_NODE_SUM 34
+#define JS_NODE_SUB 35
+#define JS_NODE_MUL 36
+#define JS_NODE_DIV 37
+#define JS_NODE_NOT 38
+#define JS_NODE_NEG 39
+#define JS_NODE_PRE_INC 40
+#define JS_NODE_PRE_DEC 41
+#define JS_NODE_POS_INC 42
+#define JS_NODE_POS_DEC 43
+#define JS_NODE_FIELD 44
+#define JS_NODE_ARRAY 45
+#define JS_NODE_CALL 46
+
 
 #define JS_VALUE_NULL 0
 #define JS_VALUE_BOOL 1
 #define JS_VALUE_NUM 2
 #define JS_VALUE_INT 3
 #define JS_VALUE_STR 4
+
+typedef unsigned char js_bool;
+typedef double js_num;
+typedef long js_int;
+typedef char* js_str;
+typedef uint64 js_hash;
 
 struct js_token_t {
     unsigned short type;
@@ -81,22 +123,30 @@ struct js_value_null_t {
     struct js_value_t* next;
 };
 
-struct js_value_boolean_t {
+struct js_value_bool_t {
     unsigned char type;
     struct js_value_t* next;
-    uint8 value;
+    js_bool value;
 };
 
 struct js_value_int_t {
     unsigned char type;
     struct js_value_t* next;
-    int32 value;
+    js_int value;
 };
 
 struct js_value_num_t {
     unsigned char type;
     struct js_value_t* next;
-    double value;
+    js_num value;
+};
+
+struct js_value_str_t {
+    unsigned char type;
+    struct js_value_t* next;
+    js_str value;
+    size_t length;
+    js_hash hash;
 };
 
 struct js_node_t {
@@ -116,7 +166,9 @@ struct js_node_error_t {
 struct js_node_string_t {
     unsigned char type;
     struct js_node_t* next;
-    char* value;
+    js_str value;
+    size_t length;
+    js_hash hash;
 };
 
 struct js_node_num_t {
@@ -160,6 +212,197 @@ struct js_node_this_t {
 struct js_node_super_t {
     unsigned char type;
     struct js_node_t* next;
+};
+
+struct js_node_assignment_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_ternary_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* true_value;
+    struct js_node_t* false_value;
+};
+
+struct js_node_or_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_and_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_bitwise_or_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_bitwise_xor_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_bitwise_and_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_equal_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_not_equal_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_lower_equal_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_greater_equal_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_lower_than_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_greater_than_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_shift_left_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_shift_right_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_sum_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_sub_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_mul_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_div_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_not_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_neg_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_pre_inc_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_pre_dec_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_pos_inc_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_pos_dec_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+};
+
+struct js_node_field_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_id_t* value;
+};
+
+struct js_node_array_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
+};
+
+struct js_node_call_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
+    struct js_node_t* value;
 };
 
 struct js_node_empty_t {
@@ -213,6 +456,8 @@ struct js_node_while_t {
     struct js_node_t* statement;
 };
 
+#define js_str_hash_prime 13
+
 void js_token_free(struct js_token_t* self);
 
 void js_tokens_free(struct js_token_t* self);
@@ -223,7 +468,7 @@ struct js_parser_t* js_parser_new(struct js_token_t* tokens);
 void js_parser_free(struct js_parser_t* self);
 struct js_node_t* js_parser(struct js_parser_t* self, struct js_token_t* tokens);
 
-struct js_context_t* js_context_new();
+struct js_context_t* js_context_new(struct flow_memory_t* memory);
 void js_context_free(struct js_context_t* self);
 uint8 js_context_empty(struct js_context_t* self);
 void js_context_push(struct js_context_t* self, struct js_value_t* value);
@@ -231,14 +476,47 @@ void js_context_push(struct js_context_t* self, struct js_value_t* value);
 struct js_value_t* js_context_pop(struct js_context_t* self);
 
 void js_value_free(struct js_value_t* self);
-struct js_value_null_t* js_value_null();
-struct js_value_boolean_t* js_value_true();
-struct js_value_boolean_t* js_value_false();
-struct js_value_int_t* js_value_int_new(struct flow_memory_t* memory, int32 value);
-struct js_value_num_t* js_value_num_new(struct flow_memory_t* memory, double value);
+struct js_value_t* js_value_null();
+struct js_value_t* js_value_true();
+struct js_value_t* js_value_false();
+js_bool js_value_is_equal(struct js_context_t* context, struct js_value_t* left, struct js_value_t* right);
+js_int js_value_is_compare(struct js_context_t* context, struct js_value_t* left, struct js_value_t* right);
+#define js_value_def(NAME, VALUE) struct js_value_t* NAME = VALUE;
+#define js_value_bool(FLAG) ((FLAG) ? js_value_true() : js_value_false())
+#define js_value_exec_def(NAME, NODE) js_node_exec(NODE, context); struct js_value_t* NAME = js_context_pop(context);
+#define js_value_release(VALUE) js_value_free(VALUE);
+#define js_value_bool_value(VALUE) ((struct js_value_bool_t*)VALUE)->value
+#define js_value_bool_def(NAME, VALUE) js_bool NAME = js_value_is_bool(VALUE) ? js_value_bool_value(VALUE) : 0;
+#define js_value_is_true(VALUE) (VALUE) == js_value_true()
+#define js_value_is_false(VALUE) (VALUE) != js_value_true()
+#define js_value_is_null(VALUE) (VALUE->type == JS_VALUE_NULL)
+#define js_value_is_bool(VALUE) (VALUE->type == JS_VALUE_BOOL)
+#define js_value_is_int(VALUE) (VALUE->type == JS_VALUE_INT)
+#define js_value_is_num(VALUE) (VALUE->type == JS_VALUE_NUM)
+#define js_value_is_numint(VALUE) (VALUE->type == JS_VALUE_INT || VALUE->type == JS_VALUE_NUM)
+#define js_value_is_str(VALUE) (VALUE->type == JS_VALUE_STR)
+#define js_value_int_def(NAME, VALUE) js_int NAME = js_value_int_value(VALUE);
+#define js_value_int_value(VALUE) ((struct js_value_int_t*)VALUE)->value
+#define js_value_int_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = js_value_int_new(CONTEXT->memory, VALUE);
+#define js_value_num_def(NAME, VALUE) js_num NAME = js_value_num_value(VALUE);
+#define js_value_num_value(VALUE) ((struct js_value_num_t*)VALUE)->value
+#define js_value_num_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = js_value_num_new(CONTEXT->memory, VALUE);
+#define js_value_numint_def(NAME, VALUE) js_num NAME = js_value_is_num(VALUE) ? js_value_num_value(VALUE) : (js_num)js_value_int_value(VALUE);
+#define js_value_str_def(NAME, VALUE) js_str NAME = js_value_str_value(VALUE);
+#define js_value_str_value(VALUE) ((struct js_value_str_t*)VALUE)->value
+#define js_value_str_len_def(NAME, VALUE) size_t NAME = strlen(js_value_str_value(VALUE));
+#define js_value_str_new_def(CONTEXT, NAME, VALUE, LENGTH, HASH) \
+        struct js_value_t* NAME = js_value_str_new(CONTEXT->memory, VALUE, LENGTH, HASH);
+#define js_value_obj_to_str_def(NAME, VALUE) \
+        js_str NAME = js_value_is_str(VALUE) ? js_value_str_value(VALUE) : js_value_object_string_ansi(VALUE);
+struct js_value_t* js_value_int_new(struct flow_memory_t* memory, js_int value);
+struct js_value_t* js_value_num_new(struct flow_memory_t* memory, js_num value);
+struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, size_t length, js_hash hash);
+void js_value_str_free(struct js_value_str_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);
+void js_node_compile(struct js_node_t* self);
 void js_node_head(struct js_node_t* self);
 void js_node_body(struct js_node_t* self);
 void js_node_exec(struct js_node_t* self, struct js_context_t* context);
@@ -257,7 +535,7 @@ void js_node_id_head(struct js_node_id_t* self);
 void js_node_id_body(struct js_node_id_t* self);
 void js_node_id_exec(struct js_node_id_t* self, struct js_context_t* context);
 
-struct js_node_string_t* js_node_string_new(char* word);
+struct js_node_string_t* js_node_string_new(char* word, size_t length);
 void js_node_string_free(struct js_node_string_t* self);
 void js_node_string_head(struct js_node_string_t* self);
 void js_node_string_body(struct js_node_string_t* self);
@@ -304,6 +582,174 @@ void js_node_super_free(struct js_node_super_t* self);
 void js_node_super_head(struct js_node_super_t* self);
 void js_node_super_body(struct js_node_super_t* self);
 void js_node_super_exec(struct js_node_super_t* self, struct js_context_t* context);
+
+struct js_node_assignment_t* js_node_assignment_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_assignment_free(struct js_node_assignment_t* self);
+void js_node_assignment_head(struct js_node_assignment_t* self);
+void js_node_assignment_body(struct js_node_assignment_t* self);
+void js_node_assignment_exec(struct js_node_assignment_t* self, struct js_context_t* context);
+
+struct js_node_ternary_t* js_node_ternary_new(struct js_node_t* node, struct js_node_t* true_value, struct js_node_t* false_value);
+void js_node_ternary_free(struct js_node_ternary_t* self);
+void js_node_ternary_head(struct js_node_ternary_t* self);
+void js_node_ternary_body(struct js_node_ternary_t* self);
+void js_node_ternary_exec(struct js_node_ternary_t* self, struct js_context_t* context);
+
+struct js_node_or_t* js_node_or_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_or_free(struct js_node_or_t* self);
+void js_node_or_head(struct js_node_or_t* self);
+void js_node_or_body(struct js_node_or_t* self);
+void js_node_or_exec(struct js_node_or_t* self, struct js_context_t* context);
+
+struct js_node_and_t* js_node_and_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_and_free(struct js_node_and_t* self);
+void js_node_and_head(struct js_node_and_t* self);
+void js_node_and_body(struct js_node_and_t* self);
+void js_node_and_exec(struct js_node_and_t* self, struct js_context_t* context);
+
+struct js_node_bitwise_or_t* js_node_bitwise_or_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_bitwise_or_free(struct js_node_bitwise_or_t* self);
+void js_node_bitwise_or_head(struct js_node_bitwise_or_t* self);
+void js_node_bitwise_or_body(struct js_node_bitwise_or_t* self);
+void js_node_bitwise_or_exec(struct js_node_bitwise_or_t* self, struct js_context_t* context);
+
+struct js_node_bitwise_xor_t* js_node_bitwise_xor_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_bitwise_xor_free(struct js_node_bitwise_xor_t* self);
+void js_node_bitwise_xor_head(struct js_node_bitwise_xor_t* self);
+void js_node_bitwise_xor_body(struct js_node_bitwise_xor_t* self);
+void js_node_bitwise_xor_exec(struct js_node_bitwise_xor_t* self, struct js_context_t* context);
+
+struct js_node_bitwise_and_t* js_node_bitwise_and_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_bitwise_and_free(struct js_node_bitwise_and_t* self);
+void js_node_bitwise_and_head(struct js_node_bitwise_and_t* self);
+void js_node_bitwise_and_body(struct js_node_bitwise_and_t* self);
+void js_node_bitwise_and_exec(struct js_node_bitwise_and_t* self, struct js_context_t* context);
+
+struct js_node_equal_t* js_node_equal_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_equal_free(struct js_node_equal_t* self);
+void js_node_equal_head(struct js_node_equal_t* self);
+void js_node_equal_body(struct js_node_equal_t* self);
+void js_node_equal_exec(struct js_node_equal_t* self, struct js_context_t* context);
+
+struct js_node_not_equal_t* js_node_not_equal_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_not_equal_free(struct js_node_not_equal_t* self);
+void js_node_not_equal_head(struct js_node_not_equal_t* self);
+void js_node_not_equal_body(struct js_node_not_equal_t* self);
+void js_node_not_equal_exec(struct js_node_not_equal_t* self, struct js_context_t* context);
+
+struct js_node_lower_equal_t* js_node_lower_equal_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_lower_equal_free(struct js_node_lower_equal_t* self);
+void js_node_lower_equal_head(struct js_node_lower_equal_t* self);
+void js_node_lower_equal_body(struct js_node_lower_equal_t* self);
+void js_node_lower_equal_exec(struct js_node_lower_equal_t* self, struct js_context_t* context);
+
+struct js_node_greater_equal_t* js_node_greater_equal_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_greater_equal_free(struct js_node_greater_equal_t* self);
+void js_node_greater_equal_head(struct js_node_greater_equal_t* self);
+void js_node_greater_equal_body(struct js_node_greater_equal_t* self);
+void js_node_greater_equal_exec(struct js_node_greater_equal_t* self, struct js_context_t* context);
+
+struct js_node_lower_than_t* js_node_lower_than_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_lower_than_free(struct js_node_lower_than_t* self);
+void js_node_lower_than_head(struct js_node_lower_than_t* self);
+void js_node_lower_than_body(struct js_node_lower_than_t* self);
+void js_node_lower_than_exec(struct js_node_lower_than_t* self, struct js_context_t* context);
+
+struct js_node_greater_than_t* js_node_greater_than_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_greater_than_free(struct js_node_greater_than_t* self);
+void js_node_greater_than_head(struct js_node_greater_than_t* self);
+void js_node_greater_than_body(struct js_node_greater_than_t* self);
+void js_node_greater_than_exec(struct js_node_greater_than_t* self, struct js_context_t* context);
+
+struct js_node_shift_left_t* js_node_shift_left_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_shift_left_free(struct js_node_shift_left_t* self);
+void js_node_shift_left_head(struct js_node_shift_left_t* self);
+void js_node_shift_left_body(struct js_node_shift_left_t* self);
+void js_node_shift_left_exec(struct js_node_shift_left_t* self, struct js_context_t* context);
+
+struct js_node_shift_right_t* js_node_shift_right_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_shift_right_free(struct js_node_shift_right_t* self);
+void js_node_shift_right_head(struct js_node_shift_right_t* self);
+void js_node_shift_right_body(struct js_node_shift_right_t* self);
+void js_node_shift_right_exec(struct js_node_shift_right_t* self, struct js_context_t* context);
+
+struct js_node_sum_t* js_node_sum_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_sum_free(struct js_node_sum_t* self);
+void js_node_sum_head(struct js_node_sum_t* self);
+void js_node_sum_body(struct js_node_sum_t* self);
+void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context);
+
+struct js_node_sub_t* js_node_sub_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_sub_free(struct js_node_sub_t* self);
+void js_node_sub_head(struct js_node_sub_t* self);
+void js_node_sub_body(struct js_node_sub_t* self);
+void js_node_sub_exec(struct js_node_sub_t* self, struct js_context_t* context);
+
+struct js_node_mul_t* js_node_mul_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_mul_free(struct js_node_mul_t* self);
+void js_node_mul_head(struct js_node_mul_t* self);
+void js_node_mul_body(struct js_node_mul_t* self);
+void js_node_mul_exec(struct js_node_mul_t* self, struct js_context_t* context);
+
+struct js_node_div_t* js_node_div_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_div_free(struct js_node_div_t* self);
+void js_node_div_head(struct js_node_div_t* self);
+void js_node_div_body(struct js_node_div_t* self);
+void js_node_div_exec(struct js_node_div_t* self, struct js_context_t* context);
+
+struct js_node_not_t* js_node_not_new(struct js_node_t* node);
+void js_node_not_free(struct js_node_not_t* self);
+void js_node_not_head(struct js_node_not_t* self);
+void js_node_not_body(struct js_node_not_t* self);
+void js_node_not_exec(struct js_node_not_t* self, struct js_context_t* context);
+
+struct js_node_neg_t* js_node_neg_new(struct js_node_t* node);
+void js_node_neg_free(struct js_node_neg_t* self);
+void js_node_neg_head(struct js_node_neg_t* self);
+void js_node_neg_body(struct js_node_neg_t* self);
+void js_node_neg_exec(struct js_node_neg_t* self, struct js_context_t* context);
+
+struct js_node_pre_inc_t* js_node_pre_inc_new(struct js_node_t* node);
+void js_node_pre_inc_free(struct js_node_pre_inc_t* self);
+void js_node_pre_inc_head(struct js_node_pre_inc_t* self);
+void js_node_pre_inc_body(struct js_node_pre_inc_t* self);
+void js_node_pre_inc_exec(struct js_node_pre_inc_t* self, struct js_context_t* context);
+
+struct js_node_pre_dec_t* js_node_pre_dec_new(struct js_node_t* node);
+void js_node_pre_dec_free(struct js_node_pre_dec_t* self);
+void js_node_pre_dec_head(struct js_node_pre_dec_t* self);
+void js_node_pre_dec_body(struct js_node_pre_dec_t* self);
+void js_node_pre_dec_exec(struct js_node_pre_dec_t* self, struct js_context_t* context);
+
+struct js_node_pos_inc_t* js_node_pos_inc_new(struct js_node_t* node);
+void js_node_pos_inc_free(struct js_node_pos_inc_t* self);
+void js_node_pos_inc_head(struct js_node_pos_inc_t* self);
+void js_node_pos_inc_body(struct js_node_pos_inc_t* self);
+void js_node_pos_inc_exec(struct js_node_pos_inc_t* self, struct js_context_t* context);
+
+struct js_node_pos_dec_t* js_node_pos_dec_new(struct js_node_t* node);
+void js_node_pos_dec_free(struct js_node_pos_dec_t* self);
+void js_node_pos_dec_head(struct js_node_pos_dec_t* self);
+void js_node_pos_dec_body(struct js_node_pos_dec_t* self);
+void js_node_pos_dec_exec(struct js_node_pos_dec_t* self, struct js_context_t* context);
+
+struct js_node_field_t* js_node_field_new(struct js_node_t* node, struct js_node_id_t* value);
+void js_node_field_free(struct js_node_field_t* self);
+void js_node_field_head(struct js_node_field_t* self);
+void js_node_field_body(struct js_node_field_t* self);
+void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context);
+
+struct js_node_array_t* js_node_array_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_array_free(struct js_node_array_t* self);
+void js_node_array_head(struct js_node_array_t* self);
+void js_node_array_body(struct js_node_array_t* self);
+void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* context);
+
+struct js_node_call_t* js_node_call_new(struct js_node_t* node, struct js_node_t* value);
+void js_node_call_free(struct js_node_call_t* self);
+void js_node_call_head(struct js_node_call_t* self);
+void js_node_call_body(struct js_node_call_t* self);
+void js_node_call_exec(struct js_node_call_t* self, struct js_context_t* context);
 
 struct js_node_return_t* js_node_return_new(struct js_node_t* expression);
 void js_node_return_free(struct js_node_return_t* self);

@@ -71,7 +71,7 @@ void test_js_lexer() {
         struct js_token_t* tokens = js_lexer("-");
         struct js_token_t* token = tokens;
         
-        assert(!token->word);
+        assert(!strcmp(token->word, "-"));
         assert(token->type == '-');
         token = token->next;
         
@@ -84,7 +84,7 @@ void test_js_lexer() {
         struct js_token_t* tokens = js_lexer("for 1 -");
         struct js_token_t* token = tokens;
         
-        assert(!token->word);
+        assert(!strcmp(token->word, "for"));
         assert(token->type == JS_TOKEN_FOR);
         token = token->next;
 
@@ -92,7 +92,7 @@ void test_js_lexer() {
         assert(token->type == JS_TOKEN_NUMBER);
         token = token->next;
         
-        assert(!token->word);
+        assert(!strcmp(token->word, "-"));
         assert(token->type == '-');
         token = token->next;
         
@@ -105,11 +105,11 @@ void test_js_lexer() {
         struct js_token_t* tokens = js_lexer("for(a==2){\n}");
         struct js_token_t* token = tokens;
         
-        assert(!token->word);
+        assert(!strcmp(token->word, "for"));
         assert(token->type == JS_TOKEN_FOR);
         token = token->next;
         
-        assert(!token->word);
+        assert(!strcmp(token->word, "("));
         assert(token->type == '(');
         token = token->next;
 
@@ -117,11 +117,11 @@ void test_js_lexer() {
         assert(token->type == JS_TOKEN_ID);
         token = token->next;
 
-        assert(!token->word);
+        assert(!strcmp(token->word, "="));
         assert(token->type == '=');
         token = token->next;
 
-        assert(!token->word);
+        assert(!strcmp(token->word, "="));
         assert(token->type == '=');
         token = token->next;
 
@@ -129,15 +129,15 @@ void test_js_lexer() {
         assert(token->type == JS_TOKEN_NUMBER);
         token = token->next;
 
-        assert(!token->word);
+        assert(!strcmp(token->word, ")"));
         assert(token->type == ')');
         token = token->next;
 
-        assert(!token->word);
+        assert(!strcmp(token->word, "{"));
         assert(token->type == '{');
         token = token->next;
 
-        assert(!token->word);
+        assert(!strcmp(token->word, "}"));
         assert(token->type == '}');
         token = token->next;
         

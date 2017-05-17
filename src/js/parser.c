@@ -17,6 +17,8 @@
 #define js_parser_token_get()
 #define js_parser_type(TYPE) (self->token->type == TYPE)
 #define js_parser_type_not(TYPE) (self->token->type != TYPE)
+#define js_parser_next_type(TYPE) (self->token->next->type == TYPE)
+#define js_parser_next_type_not(TYPE) (self->token->next->type != TYPE)
 #define js_parser_error(MSG) js_parser_error_next(MSG, 0)
 #define js_parser_error_next(MSG, NEXT) (struct js_node_t*) js_node_error_new(strdup(MSG), strdup(self->token->word), self->token->line, self->token->column, (struct js_node_error_t*) NEXT)
 #define js_parser_error_token_next(MSG, TOKEN, NEXT) (struct js_node_t*) js_node_error_new(strdup(MSG), strdup(TOKEN->word), TOKEN->line, TOKEN->column, (struct js_node_error_t*) NEXT)
@@ -85,7 +87,7 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
         js_parser_next();
         return node;
     } else if (js_parser_type(JS_TOKEN_STRING)) {
-        struct js_node_t* node = (struct js_node_t*) js_node_string_new(strdup(js_parser_word()));
+        struct js_node_t* node = (struct js_node_t*) js_node_string_new(strdup(js_parser_word()), strlen(js_parser_word()));
         js_parser_next();
         return node;
     } else if (js_parser_type(JS_TOKEN_NUMBER)) {
@@ -113,6 +115,24 @@ struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression member:", exp_token, node);
     }
+    
+    while (js_parser_type('.') || js_parser_type('[') || js_parser_type('(')) {
+        if (js_parser_type('.')) {
+            js_parser_next();
+            
+            js_node_def_token(id_token);
+            if (js_parser_type_not(JS_TOKEN_ID)) {
+                js_node_free(node);
+                return js_parser_error_next("expression member:", id_token);
+            }
+            js_parser_next();
+            struct js_node_id_t* id = js_parser_node_id();
+            
+            node = (struct js_node_t*) js_node_field_new(node, id);
+//        } else if (js_parser_type('[')) {
+//        } else if (js_parser_type('(')) {
+        }
+    }
     return node;
 }
 
@@ -135,11 +155,81 @@ struct js_node_t* js_parser_expression_constructor(struct js_parser_t* self) {
 }
 
 struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
-    js_node_def_token(exp_token);
-    struct js_node_t* node = js_parser_expression_constructor(self);
-    if (js_node_error_is(node)) {
-        return js_parser_error_token_next("expression unary:", exp_token, node);
+    struct js_node_t* node;
+    if (js_parser_type('-') && js_parser_next_type('-')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: -- '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_pre_dec_new(node);
+    } else if (js_parser_type('+') && js_parser_next_type('+')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: ++ '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_pre_inc_new(node);
+    } else if (js_parser_type('-')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: - '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_neg_new(node);
+    } else if (js_parser_type('!')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: ! '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_not_new(node);
+    } else {
+        js_node_def_token(exp_token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: '<expression constructor>'", exp_token, node);
+        }
     }
+    
+    if (js_parser_type('-') && js_parser_next_type('-')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: -- '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_pos_dec_new(node);
+    } else if (js_parser_type('+') && js_parser_next_type('+')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        node = js_parser_expression_constructor(self);
+        if (js_node_error_is(node)) {
+            return js_parser_error_token_next("expression unary: ++ '<expression constructor>' expected", token, node);
+        }
+        
+        node = (struct js_node_t*) js_node_pos_inc_new(node);
+    }
+    
     return node;
 }
 
@@ -149,6 +239,31 @@ struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) 
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression multiplicative:", exp_token, node);
     }
+    
+    if (js_parser_type('*')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_multiplicative(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression multiplicative: <expression unary> >> '<expression multiplicative>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_mul_new(node, value);
+    } else if (js_parser_type('/')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_multiplicative(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression multiplicative: <expression unary> << '<expression multiplicative>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_div_new(node, value);
+    }
+    
     return node;
 }
 
@@ -158,6 +273,31 @@ struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression additive:", exp_token, node);
     }
+    
+    if (js_parser_type('+')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_additive(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression additive: <expression multiplicative> >> '<expression additive>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_sum_new(node, value);
+    } else if (js_parser_type('-')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_additive(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression additive: <expression multiplicative> << '<expression additive>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_sub_new(node, value);
+    }
+    
     return node;
 }
 
@@ -167,24 +307,115 @@ struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression shift:", exp_token, node);
     }
-    return node;
-}
-
-struct js_node_t* js_parser_expression_relational(struct js_parser_t* self) {
-    js_node_def_token(exp_token);
-    struct js_node_t* node = js_parser_expression_shift(self);
-    if (js_node_error_is(node)) {
-        return js_parser_error_token_next("expression relational:", exp_token, node);
+    
+    if (js_parser_type('>') && js_parser_next_type('>')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_shift(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression shift: <expression additive> >> '<expression shift>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_shift_right_new(node, value);
+    } else if (js_parser_type('<') && js_parser_next_type('<')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_shift(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression shift: <expression additive> << '<expression shift>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_shift_left_new(node, value);
     }
+    
     return node;
 }
 
 struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
     js_node_def_token(exp_token);
-    struct js_node_t* node = js_parser_expression_relational(self);
+    struct js_node_t* node = js_parser_expression_shift(self);
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression equality:", exp_token, node);
     }
+    
+    if (js_parser_type('=') && js_parser_next_type('=')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> == '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_equal_new(node, value);
+    } else if (js_parser_type('!') && js_parser_next_type('=')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> != '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_not_equal_new(node, value);
+    } else if (js_parser_type('<') && js_parser_next_type('=')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> <= '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_lower_equal_new(node, value);
+    } else if (js_parser_type('>') && js_parser_next_type('=')) {
+        js_parser_next();
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> >= '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_greater_equal_new(node, value);
+    } else if (js_parser_type('<')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> < '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_lower_than_new(node, value);
+    } else if (js_parser_type('>')) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_equality(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression equality: <expression shift> > '<expression equality>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_greater_than_new(node, value);
+    }
+    
     return node;
 }
 
@@ -194,6 +425,20 @@ struct js_node_t* js_parser_expression_bitwise_and(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression bitwise and:", exp_token, node);
     }
+    
+    if (js_parser_type(JS_TOKEN_BITAND)) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_bitwise_and(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression bitwise and: <expression bitwise equality> bitand '<expression bitwise and>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_bitwise_and_new(node, value);
+    }
+    
     return node;
 }
 
@@ -203,6 +448,20 @@ struct js_node_t* js_parser_expression_bitwise_xor(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression bitwise xor:", exp_token, node);
     }
+    
+    if (js_parser_type(JS_TOKEN_XOR)) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_bitwise_xor(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression bitwise or: <expression bitwise and> xor '<expression bitwise xor>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_bitwise_xor_new(node, value);
+    }
+    
     return node;
 }
 
@@ -212,6 +471,20 @@ struct js_node_t* js_parser_expression_bitwise_or(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression bitwise or:", exp_token, node);
     }
+    
+    if (js_parser_type(JS_TOKEN_BITOR)) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_bitwise_or(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression bitwise or: <expression bitwise xor> bitor '<expression bitwise or>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_bitwise_or_new(node, value);
+    }
+    
     return node;
 }
 
@@ -221,6 +494,20 @@ struct js_node_t* js_parser_expression_and(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression and:", exp_token, node);
     }
+    
+    if (js_parser_type(JS_TOKEN_AND)) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_and(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression and: <expression bitwise or> and '<expression and>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_and_new(node, value);
+    }
+    
     return node;
 }
 
@@ -230,6 +517,20 @@ struct js_node_t* js_parser_expression_or(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression or:", exp_token, node);
     }
+    
+    if (js_parser_type(JS_TOKEN_OR)) {
+        js_parser_next();
+        
+        js_node_def_token(token);
+        struct js_node_t* value = js_parser_expression_or(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression or: <expression and> or '<expression or>' expected", token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_or_new(node, value);
+    }
+    
     return node;
 }
 
@@ -239,6 +540,36 @@ struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression conditional:", exp_token, node);
     }
+    
+    if (js_parser_type('?')) {
+        js_parser_next();
+        
+        js_node_def_token(true_token);
+        struct js_node_t* true_value = js_parser_expression_conditional(self);
+        if (js_node_error_is(true_value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression conditional: <expression or> ? '<expression conditional>' expected", true_token, true_value);
+        }
+        
+        js_node_def_token(dot_token);
+        if (js_parser_type_not(':')) {
+            js_node_free(node);
+            js_node_free(true_value);
+            return js_parser_error_token_next("expression conditional: <expression or> ? <expression conditional> ':' expected", dot_token, 0);
+        }
+        js_parser_next();
+        
+        js_node_def_token(false_token);
+        struct js_node_t* false_value = js_parser_expression_conditional(self);
+        if (js_node_error_is(false_value)) {
+            js_node_free(node);
+            js_node_free(true_value);
+            return js_parser_error_token_next("expression conditional: <expression or> ? <expression conditional> : '<expression conditional>' expected", false_token, false_value);
+        }
+        
+        node = (struct js_node_t*) js_node_ternary_new(node, true_value, false_value);
+    }
+    
     return node;
 }
 
@@ -248,6 +579,20 @@ struct js_node_t* js_parser_expression_assignment(struct js_parser_t* self) {
     if (js_node_error_is(node)) {
         return js_parser_error_token_next("expression assignment:", exp_token, node);
     }
+    
+    if (js_parser_type('=') && js_parser_next_type_not('=')) {
+        js_parser_next();
+        
+        js_node_def_token(value_token);
+        struct js_node_t* value = js_parser_expression_assignment(self);
+        if (js_node_error_is(value)) {
+            js_node_free(node);
+            return js_parser_error_token_next("expression assignment: <expression conditional> = '<expression assignment>' expected", value_token, value);
+        }
+        
+        node = (struct js_node_t*) js_node_assignment_new(node, value);
+    }
+    
     return node;
 }
 
@@ -389,15 +734,9 @@ struct js_node_t* js_parser_statement(struct js_parser_t* self) {
         return js_parser_empty_new();
     } else if (js_parser_type(JS_TOKEN_BREAK)) {
         js_parser_next();
-        if (js_parser_type(';')) {
-            js_parser_next();
-        }
         return (struct js_node_t*) js_node_break_new();
     } else if (js_parser_type(JS_TOKEN_CONTINUE)) {
         js_parser_next();
-        if (js_parser_type(';')) {
-            js_parser_next();
-        }
         return (struct js_node_t*) js_node_continue_new();
     } else if (js_parser_type(JS_TOKEN_DO)) {
         return js_parser_statement_block(self);
@@ -491,7 +830,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     js_parser_next();
     
     struct js_node_t* parameters = js_parser_parameter_list_opt(self);
-    if (js_node_error_is(parameters)) {
+    if (parameters && js_node_error_is(parameters)) {
         js_parser_node_id_free(node);
         return js_parser_error_next("function: function <id> ( '<parameter list>' expected", parameters);
     }
