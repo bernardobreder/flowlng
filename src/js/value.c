@@ -64,9 +64,9 @@ void js_value_str_free(struct js_value_str_t* self) {
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str) {
-    struct js_value_obj_t* self = flow_memory_alloc_typed(memory, struct js_value_obj_t);
-    self->type = JS_VALUE_OBJ;
+struct js_value_t* js_value_class_new(struct flow_memory_t* memory, struct js_value_str_t* class_str) {
+    struct js_value_class_t* self = flow_memory_alloc_typed(memory, struct js_value_class_t);
+    self->type = JS_VALUE_CLASS;
     self->next = 0;
     self->constructor = 0;
     self->desctructor = 0;
@@ -78,6 +78,28 @@ struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_valu
     self->equal_func = 0;
     self->class_str = class_str;
     return (struct js_value_t*) self;
+}
+
+void js_value_class_free(struct js_value_str_t* self) {
+    if (self->next) js_value_free(self->next);
+    
+    flow_memory_item_free(self);
+}
+
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str) {
+    struct js_value_obj_t* self = flow_memory_alloc_typed(memory, struct js_value_obj_t);
+    self->type = JS_VALUE_OBJ;
+    self->next = 0;
+    self->field = 0;
+    self->function = 0;
+    self->class_def = 0
+    return (struct js_value_t*) self;
+}
+
+void js_value_obj_free(struct js_value_obj_t* self) {
+    if (self->next) js_value_free(self->next);
+    
+    flow_memory_item_free(self);
 }
 
 struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* name, size_t length, js_hash hash) {
@@ -111,18 +133,13 @@ void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t*
         }
         entry = entry->next;
     }
-    entry = (struct js_value_obj_entry_t*) malloc(sizeof(struct js_value_obj_entry_t));
+    entry = flow_memory_alloc_typed(memory, struct js_value_obj_entry_t);
     entry->name = strdup(name);
     entry->length = length;
     entry->hash = hash;
     entry->value = value;
     entry->next = self->field;
     self->field = entry;
-}
-
-void js_value_obj_free(struct js_value_str_t* self) {
-    if (self->next) js_value_free(self->next);
-    flow_memory_item_free(self);
 }
 
 struct js_value_t* js_value_func_new(struct flow_memory_t* memory) {

@@ -90,7 +90,8 @@
 #define JS_VALUE_INT 3
 #define JS_VALUE_STR 4
 #define JS_VALUE_OBJ 5
-#define JS_VALUE_FUNC 6
+#define JS_VALUE_CLASS 6
+#define JS_VALUE_FUNC 7
 
 typedef unsigned char js_bool;
 typedef double js_num;
@@ -159,6 +160,20 @@ struct js_value_func_t {
     struct js_value_t* next;
 };
 
+struct js_value_class_t {
+    unsigned char type;
+    struct js_value_class_t* next;
+    struct js_value_str_t* class_str;
+    struct js_value_obj_entry_t* constructor;
+    struct js_value_obj_entry_t* desctructor;
+    struct js_value_obj_entry_t* field;
+    struct js_value_obj_entry_t* function;
+    struct js_value_func_t* to_str_func;
+    struct js_value_func_t* to_int_func;
+    struct js_value_func_t* clone_func;
+    struct js_value_func_t* equal_func;
+};
+
 struct js_value_obj_entry_t {
     char* name;
     size_t length;
@@ -169,15 +184,9 @@ struct js_value_obj_entry_t {
 struct js_value_obj_t {
     unsigned char type;
     struct js_value_obj_t* next;
-    struct js_value_obj_entry_t* constructor;
-    struct js_value_obj_entry_t* desctructor;
+    struct js_value_class_t* class_def;
     struct js_value_obj_entry_t* field;
     struct js_value_obj_entry_t* function;
-    struct js_value_func_t* to_str_func;
-    struct js_value_func_t* to_int_func;
-    struct js_value_func_t* clone_func;
-    struct js_value_func_t* equal_func;
-    struct js_value_str_t* class_str;
 };
 
 struct js_node_t {
@@ -545,7 +554,7 @@ struct js_value_t* js_value_num_new(struct flow_memory_t* memory, js_num value);
 struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
 struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str);
-void js_value_obj_free(struct js_value_str_t* self);
+void js_value_obj_free(struct js_value_obj_t* self);
 struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* name, size_t length, js_hash hash);
 void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_obj_t* value);
 struct js_value_t* js_value_func_new(struct flow_memory_t* memory);
