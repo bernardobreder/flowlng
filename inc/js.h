@@ -546,6 +546,8 @@ struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, s
 void js_value_str_free(struct js_value_str_t* self);
 struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str);
 void js_value_obj_free(struct js_value_str_t* self);
+struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* name, size_t length, js_hash hash);
+void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_obj_t* value);
 struct js_value_t* js_value_func_new(struct flow_memory_t* memory);
 void js_value_func_free(struct js_value_str_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);

@@ -80,6 +80,46 @@ struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_valu
     return (struct js_value_t*) self;
 }
 
+struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* name, size_t length, js_hash hash) {
+    struct js_value_obj_t* obj = self;
+    while (obj) {
+        struct js_value_obj_entry_t* entry = obj->field;
+        while (entry) {
+            if (entry->hash == hash && entry->length == length && !strcmp(entry->name, name)) {
+                if (entry != obj->field) {
+                    entry->next = obj->field;
+                    obj->field = entry;
+                }
+                return entry->value;
+            }
+            entry = entry->next;
+        }
+        obj = obj->next;
+    }
+}
+
+void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_obj_t* value) {
+    struct js_value_obj_entry_t* entry = self->field;
+    while (entry) {
+        if (entry->hash == hash && entry->length == length && !strcmp(entry->name, name)) {
+            if (entry != obj->field) {
+                entry->next = obj->field;
+                obj->field = entry;
+            }
+            entry->value = value;
+            return;
+        }
+        entry = entry->next;
+    }
+    entry = (struct js_value_obj_entry_t*) malloc(sizeof(struct js_value_obj_entry_t));
+    entry->name = strdup(name);
+    entry->length = length;
+    entry->hash = hash;
+    entry->value = value;
+    entry->next = self->field;
+    self->field = entry;
+}
+
 void js_value_obj_free(struct js_value_str_t* self) {
     if (self->next) js_value_free(self->next);
     flow_memory_item_free(self);
