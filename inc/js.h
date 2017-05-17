@@ -88,12 +88,15 @@
 #define JS_VALUE_NUM 2
 #define JS_VALUE_INT 3
 #define JS_VALUE_STR 4
+#define JS_VALUE_OBJ 5
+#define JS_VALUE_FUNC 6
 
 typedef unsigned char js_bool;
 typedef double js_num;
 typedef long js_int;
 typedef char* js_str;
 typedef uint64 js_hash;
+typedef void* js_obj;
 
 struct js_token_t {
     unsigned short type;
@@ -148,6 +151,32 @@ struct js_value_str_t {
     size_t length;
     js_hash hash;
 };
+
+struct js_value_func_t {
+    unsigned char type;
+    struct js_value_t* next;
+};
+
+struct js_value_obj_entry_t {
+    char* name;
+    size_t length;
+    js_hash hash;
+    struct js_value_t* value;
+}
+
+struct js_value_obj_t {
+    unsigned char type;
+    struct js_value_obj_t* next;
+    struct js_value_obj_entry_t* constructor;
+    struct js_value_obj_entry_t* desctructor;
+    struct js_value_obj_entry_t* field;
+    struct js_value_obj_entry_t* function;
+    struct js_value_func_t* to_str_func;
+    struct js_value_func_t* to_int_func;
+    struct js_value_func_t* clone_func;
+    struct js_value_func_t* equal_func;
+    struct js_value_str_t* class_str;
+}
 
 struct js_node_t {
     unsigned char type;
@@ -513,6 +542,10 @@ struct js_value_t* js_value_int_new(struct flow_memory_t* memory, js_int value);
 struct js_value_t* js_value_num_new(struct flow_memory_t* memory, js_num value);
 struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory);
+void js_value_obj_free(struct js_value_str_t* self);
+struct js_value_t* js_value_func_new(struct flow_memory_t* memory);
+void js_value_func_free(struct js_value_str_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);
