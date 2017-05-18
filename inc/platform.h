@@ -48,6 +48,8 @@ typedef int int36;
 typedef unsigned int uint36;
 #endif
 
+typedef uint64 js_hash;
+
 #if defined(linux) || defined(__linux) || defined(__linux__)
 #undef __LINUX__
 #define __LINUX__   1

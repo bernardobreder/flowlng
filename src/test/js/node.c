@@ -16,6 +16,7 @@ static void test_js_node_exec(char* code, char* expected) {
         js_node_head(node);
         js_node_body(node);
         struct js_context_t* context = js_context_new(memory);
+        js_context_push(context, js_value_obj_new(memory));
         js_node_exec(node, context);
         if (!js_context_empty(context)) {
             struct js_value_t* value = js_context_pop(context);
@@ -31,7 +32,17 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
-    test_js_node_exec("return 1+2", "3");
+    test_js_node_exec("function a() do end", "");
+    test_js_node_exec("class a do end", "");
+    test_js_node_exec("class a do var a end", "");
+    test_js_node_exec("class a do function a() do end end", "");
+    test_js_node_exec("class a do constructor() do end end", "");
+    test_js_node_exec("return 2+3", "5");
+    test_js_node_exec("return 2-3", "-1");
+    test_js_node_exec("return -2+3", "1");
+    test_js_node_exec("return 2*3", "6");
+//    test_js_node_exec("return 4/2", "2");
+//    test_js_node_exec("return 4/-2", "-2");
     
     test_js_node_exec("return 1", "1");
     test_js_node_exec("return 1.234", "1.234000");

@@ -86,18 +86,18 @@ void js_value_class_free(struct js_value_str_t* self) {
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str) {
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory) {
     struct js_value_obj_t* self = flow_memory_alloc_typed(memory, struct js_value_obj_t);
     self->type = JS_VALUE_OBJ;
     self->next = 0;
     self->field = 0;
     self->function = 0;
-    self->class_def = 0
+    self->class_def = 0;
     return (struct js_value_t*) self;
 }
 
 void js_value_obj_free(struct js_value_obj_t* self) {
-    if (self->next) js_value_free(self->next);
+    if (self->next) js_value_obj_free(self->next);
     
     flow_memory_item_free(self);
 }
@@ -118,15 +118,16 @@ struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* nam
         }
         obj = obj->next;
     }
+    return js_value_null();
 }
 
-void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_obj_t* value) {
+void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_t* value) {
     struct js_value_obj_entry_t* entry = self->field;
     while (entry) {
         if (entry->hash == hash && entry->length == length && !strcmp(entry->name, name)) {
-            if (entry != obj->field) {
-                entry->next = obj->field;
-                obj->field = entry;
+            if (entry != self->field) {
+                entry->next = self->field;
+                self->field = entry;
             }
             entry->value = value;
             return;
@@ -193,7 +194,7 @@ js_bool js_value_is_equal(struct js_context_t* context, struct js_value_t* left,
             js_value_num_def(num_right, right);
             js_num delta = num_left - num_right;
             if (delta < 0) delta = -delta;
-            return delta < 0.000001;
+            return delta < js_num_precision;
         }
         case JS_VALUE_STR: {
             js_value_str_def(str_left, left);
@@ -225,7 +226,7 @@ js_int js_value_is_compare(struct js_context_t* context, struct js_value_t* left
             js_value_num_def(num_right, right);
             js_num delta = num_left - num_right;
             if (delta < 0) delta = -delta;
-            return delta < 0.000001 ? 0 : num_left - num_right;
+            return delta < js_num_precision ? 0 : num_left - num_right;
         }
         case JS_VALUE_STR: {
             js_value_str_def(str_left, left);

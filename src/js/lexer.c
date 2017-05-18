@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include "string.h"
+#include "xstring.h"
 #include "js.h"
 
 struct js_token_t* js_lexer(const char* text) {
@@ -25,34 +25,38 @@ struct js_token_t* js_lexer(const char* text) {
 			char* word = (char*) text + begin;
 
             if (size == 2) {
-                if (!strcmp2(word, "do")) type = JS_TOKEN_DO;
-                else if (!strcmp2(word, "if")) type = JS_TOKEN_IF;
-                else if (!strcmp2(word, "or")) type = JS_TOKEN_OR;
+                if (strcmp2(word, "do")) type = JS_TOKEN_DO;
+                else if (strcmp2(word, "if")) type = JS_TOKEN_IF;
+                else if (strcmp2(word, "or")) type = JS_TOKEN_OR;
             } else if (size == 3) {
-                if (!strcmp3(word, "for")) type = JS_TOKEN_FOR;
-                else if (!strcmp3(word, "var")) type = JS_TOKEN_VAR;
-                else if (!strcmp3(word, "end")) type = JS_TOKEN_END;
-                else if (!strcmp3(word, "and")) type = JS_TOKEN_AND;
-                else if (!strcmp3(word, "xor")) type = JS_TOKEN_XOR;
-                else if (!strcmp3(word, "pow")) type = JS_TOKEN_POW;
+                if (strcmp3(word, "for")) type = JS_TOKEN_FOR;
+                else if (strcmp3(word, "var")) type = JS_TOKEN_VAR;
+                else if (strcmp3(word, "end")) type = JS_TOKEN_END;
+                else if (strcmp3(word, "and")) type = JS_TOKEN_AND;
+                else if (strcmp3(word, "xor")) type = JS_TOKEN_XOR;
+                else if (strcmp3(word, "pow")) type = JS_TOKEN_POW;
             } else if (size == 4) {
-                if (!strcmp4(word, "true")) type = JS_TOKEN_TRUE;
-                else if (!strcmp4(word, "else")) type = JS_TOKEN_ELSE;
-                else if (!strcmp4(word, "null")) type = JS_TOKEN_NULL;
-                else if (!strcmp4(word, "super")) type = JS_TOKEN_SUPER;
+                if (strcmp4(word, "true")) type = JS_TOKEN_TRUE;
+                else if (strcmp4(word, "else")) type = JS_TOKEN_ELSE;
+                else if (strcmp4(word, "null")) type = JS_TOKEN_NULL;
             } else if (size == 5) {
-                if (!strcmp5(word, "false")) type = JS_TOKEN_FALSE;
-                else if (!strcmp5(word, "while")) type = JS_TOKEN_WHILE;
-                else if (!strcmp5(word, "break")) type = JS_TOKEN_BREAK;
-                else if (!strcmp5(word, "bitor")) type = JS_TOKEN_BITOR;
+                if (strcmp5(word, "false")) type = JS_TOKEN_FALSE;
+                else if (strcmp5(word, "while")) type = JS_TOKEN_WHILE;
+                else if (strcmp5(word, "break")) type = JS_TOKEN_BREAK;
+                else if (strcmp5(word, "bitor")) type = JS_TOKEN_BITOR;
+                else if (strcmp5(word, "super")) type = JS_TOKEN_SUPER;
+                else if (strcmp5(word, "class")) type = JS_TOKEN_CLASS;
             } else if (size == 6) {
-                if (!strcmp6(word, "return")) type = JS_TOKEN_RETURN;
-                else if (!strcmp6(word, "bitand")) type = JS_TOKEN_BITAND;
+                if (strcmp6(word, "return")) type = JS_TOKEN_RETURN;
+                else if (strcmp6(word, "bitand")) type = JS_TOKEN_BITAND;
             } else if (size == 7) {
-                if (!strcmp7(word, "require")) type = JS_TOKEN_REQUIRE;
+                if (strcmp7(word, "require")) type = JS_TOKEN_REQUIRE;
+                else if (strcmp7(word, "extends")) type = JS_TOKEN_EXTENDS;
             } else if (size == 8) {
-                if (!strcmp8(word, "function")) type = JS_TOKEN_FUNCTION;
-                else if (!strcmp8(word, "continue")) type = JS_TOKEN_CONTINUE;
+                if (strcmp8(word, "function")) type = JS_TOKEN_FUNCTION;
+                else if (strcmp8(word, "continue")) type = JS_TOKEN_CONTINUE;
+            } else if (size == 11) {
+                if (strcmp11(word, "constructor")) type = JS_TOKEN_CONSTRUCTOR;
             }
             
             struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));

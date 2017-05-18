@@ -35,11 +35,17 @@
 #define JS_TOKEN_BITAND 294
 #define JS_TOKEN_LSHIFT 295
 #define JS_TOKEN_RSHIFT 296
+#define JS_TOKEN_CLASS 297
+#define JS_TOKEN_EXTENDS 298
+#define JS_TOKEN_CONSTRUCTOR 299
 
 #define JS_NODE_ERROR 1
 #define JS_NODE_ID 2
 #define JS_NODE_EMPTY 3
 #define JS_NODE_FUNCTION 4
+#define JS_NODE_CLASS 47
+#define JS_NODE_CONSTRUCTOR 48
+#define JS_NODE_FIELD 49
 #define JS_NODE_IF 5
 #define JS_NODE_WHILE 6
 #define JS_NODE_BREAK 7
@@ -79,7 +85,7 @@
 #define JS_NODE_PRE_DEC 41
 #define JS_NODE_POS_INC 42
 #define JS_NODE_POS_DEC 43
-#define JS_NODE_FIELD 44
+#define JS_NODE_GET 44
 #define JS_NODE_ARRAY 45
 #define JS_NODE_CALL 46
 
@@ -98,12 +104,13 @@ typedef double js_num;
 typedef long js_int;
 typedef char js_char;
 typedef js_char* js_str;
-typedef uint64 js_hash;
 typedef void* js_obj;
 
 struct js_token_t {
     unsigned short type;
     char* word;
+    size_t length;
+    js_hash hash;
     int line;
     int column;
     struct js_token_t* next;
@@ -179,6 +186,7 @@ struct js_value_obj_entry_t {
     size_t length;
     js_hash hash;
     struct js_value_t* value;
+    struct js_value_obj_entry_t* next;
 };
 
 struct js_value_obj_t {
@@ -227,6 +235,8 @@ struct js_node_id_t {
     unsigned char type;
     struct js_node_t* next;
     char* word;
+    size_t length;
+    js_hash hash;
 };
 
 struct js_node_true_t {
@@ -424,7 +434,7 @@ struct js_node_pos_dec_t {
     struct js_node_t* node;
 };
 
-struct js_node_field_t {
+struct js_node_get_t {
     unsigned char type;
     struct js_node_t* next;
     struct js_node_t* node;
@@ -442,7 +452,7 @@ struct js_node_call_t {
     unsigned char type;
     struct js_node_t* next;
     struct js_node_t* node;
-    struct js_node_t* value;
+    struct js_node_t* param;
 };
 
 struct js_node_empty_t {
@@ -475,6 +485,29 @@ struct js_node_function_t {
     struct js_node_t* statement;
 };
 
+struct js_node_constructor_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* params;
+    struct js_node_t* statement;
+};
+
+struct js_node_field_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_id_t* name;
+};
+
+struct js_node_class_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_id_t* name;
+    struct js_node_id_t* extends;
+    struct js_node_t* constructor;
+    struct js_node_t* field;
+    struct js_node_t* method;
+};
+
 struct js_node_return_t {
     unsigned char type;
     struct js_node_t* next;
@@ -497,6 +530,7 @@ struct js_node_while_t {
 };
 
 #define js_str_hash_prime 13
+#define js_num_precision 0.0000001
 
 void js_token_free(struct js_token_t* self);
 
@@ -512,8 +546,11 @@ struct js_context_t* js_context_new(struct flow_memory_t* memory);
 void js_context_free(struct js_context_t* self);
 uint8 js_context_empty(struct js_context_t* self);
 void js_context_push(struct js_context_t* self, struct js_value_t* value);
-#define js_context_push_typed(CONTEXT, VALUE) js_context_push(CONTEXT, (struct js_value_t*) VALUE)
 struct js_value_t* js_context_pop(struct js_context_t* self);
+#define js_context_push_typed(CONTEXT, VALUE) js_context_push(CONTEXT, (struct js_value_t*) VALUE)
+#define js_context_memory(CONTEXT) CONTEXT->memory
+#define js_context_peek_obj(CONTEXT, NAME) \
+        struct js_value_obj_t* NAME = (struct js_value_obj_t*) CONTEXT->value;
 
 void js_value_free(struct js_value_t* self);
 struct js_value_t* js_value_null();
@@ -553,15 +590,16 @@ struct js_value_t* js_value_int_new(struct flow_memory_t* memory, js_int value);
 struct js_value_t* js_value_num_new(struct flow_memory_t* memory, js_num value);
 struct js_value_t* js_value_str_new(struct flow_memory_t* memory, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
-struct js_value_t* js_value_obj_new(struct flow_memory_t* memory, struct js_value_str_t* class_str);
+struct js_value_t* js_value_obj_new(struct flow_memory_t* memory);
 void js_value_obj_free(struct js_value_obj_t* self);
 struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, char* name, size_t length, js_hash hash);
-void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_obj_t* value);
+void js_value_obj_field_set(struct flow_memory_t* memory, struct js_value_obj_t* self, char* name, size_t length, js_hash hash, struct js_value_t* value);
 struct js_value_t* js_value_func_new(struct flow_memory_t* memory);
 void js_value_func_free(struct js_value_str_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);
+#define js_node_free_typed(NODE) js_node_free((struct js_node_t*)NODE)
 void js_node_compile(struct js_node_t* self);
 void js_node_head(struct js_node_t* self);
 void js_node_body(struct js_node_t* self);
@@ -575,7 +613,7 @@ void js_node_error_print(struct js_node_error_t* self);
 #define js_node_error_is(SELF) (SELF)->type == JS_NODE_ERROR
 #define js_node_error_is_not(SELF) (SELF)->type != JS_NODE_ERROR
 
-struct js_node_id_t* js_node_id_new(char* word);
+struct js_node_id_t* js_node_id_new(char* word, size_t length, js_hash hash);
 void js_node_id_free(struct js_node_id_t* self);
 void js_node_id_head(struct js_node_id_t* self);
 void js_node_id_body(struct js_node_id_t* self);
@@ -779,11 +817,11 @@ void js_node_pos_dec_head(struct js_node_pos_dec_t* self);
 void js_node_pos_dec_body(struct js_node_pos_dec_t* self);
 void js_node_pos_dec_exec(struct js_node_pos_dec_t* self, struct js_context_t* context);
 
-struct js_node_field_t* js_node_field_new(struct js_node_t* node, struct js_node_id_t* value);
-void js_node_field_free(struct js_node_field_t* self);
-void js_node_field_head(struct js_node_field_t* self);
-void js_node_field_body(struct js_node_field_t* self);
-void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context);
+struct js_node_get_t* js_node_get_new(struct js_node_t* node, struct js_node_id_t* value);
+void js_node_get_free(struct js_node_get_t* self);
+void js_node_get_head(struct js_node_get_t* self);
+void js_node_get_body(struct js_node_get_t* self);
+void js_node_get_exec(struct js_node_get_t* self, struct js_context_t* context);
 
 struct js_node_array_t* js_node_array_new(struct js_node_t* node, struct js_node_t* value);
 void js_node_array_free(struct js_node_array_t* self);
@@ -791,7 +829,7 @@ void js_node_array_head(struct js_node_array_t* self);
 void js_node_array_body(struct js_node_array_t* self);
 void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* context);
 
-struct js_node_call_t* js_node_call_new(struct js_node_t* node, struct js_node_t* value);
+struct js_node_call_t* js_node_call_new(struct js_node_t* node, struct js_node_t* param);
 void js_node_call_free(struct js_node_call_t* self);
 void js_node_call_head(struct js_node_call_t* self);
 void js_node_call_body(struct js_node_call_t* self);
@@ -821,8 +859,29 @@ void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t*
 struct js_node_var_item_t* js_node_var_item_new(struct js_node_id_t* name, struct js_node_t* value);
 void js_node_var_item_free(struct js_node_var_item_t* self);
 
+struct js_node_class_t* js_node_class_new(struct js_node_id_t* name, struct js_node_id_t* extends, struct js_node_t* constructor, struct js_node_t* field, struct js_node_t* method);
+void js_node_class_free(struct js_node_class_t* self);
+void js_node_class_head(struct js_node_class_t* self);
+void js_node_class_body(struct js_node_class_t* self);
+void js_node_class_exec(struct js_node_class_t* self, struct js_context_t* context);
+
 struct js_node_function_t* js_node_function_new(struct js_node_id_t* name, struct js_node_t* params, struct js_node_t* statement);
 void js_node_function_free(struct js_node_function_t* self);
+void js_node_function_head(struct js_node_function_t* self);
+void js_node_function_body(struct js_node_function_t* self);
+void js_node_function_exec(struct js_node_function_t* self, struct js_context_t* context);
+
+struct js_node_constructor_t* js_node_constructor_new(struct js_node_t* params, struct js_node_t* statement);
+void js_node_constructor_free(struct js_node_constructor_t* self);
+void js_node_constructor_head(struct js_node_constructor_t* self);
+void js_node_constructor_body(struct js_node_constructor_t* self);
+void js_node_constructor_exec(struct js_node_constructor_t* self, struct js_context_t* context);
+
+struct js_node_field_t* js_node_field_new(struct js_node_id_t* name);
+void js_node_field_free(struct js_node_field_t* self);
+void js_node_field_head(struct js_node_field_t* self);
+void js_node_field_body(struct js_node_field_t* self);
+void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context);
 
 struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement);
 void js_node_if_free(struct js_node_if_t* self);
