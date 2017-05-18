@@ -814,7 +814,7 @@ struct js_node_t* js_parser_statement_block(struct js_parser_t* self) {
     return head;
 }
 
-struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
+struct js_node_param_t* js_parser_parameter_list(struct js_parser_t* self) {
     js_node_def(head, tail);
     
     js_node_def_token(id_first_token);
@@ -822,6 +822,7 @@ struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
         return js_parser_error("parameter list: '<id>' expected", id_first_token, 0);
     }
     js_parser_id_def(id);
+    
     js_node_add(head, tail, id);
     js_parser_next();
 
@@ -839,10 +840,10 @@ struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
     }
     
     js_node_def_end();
-    return head;
+    return (struct js_node_param_t*) head;
 }
 
-struct js_node_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
+struct js_node_param_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
     if (js_parser_type_not(JS_TOKEN_ID)) return 0;
     return js_parser_parameter_list(self);
 }
@@ -865,16 +866,16 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     js_parser_next();
     
     js_node_def_token(arg_token);
-    struct js_node_t* parameters = js_parser_parameter_list_opt(self);
-    if (parameters && js_node_error_is(parameters)) {
+    struct js_node_param_t* param = js_parser_parameter_list_opt(self);
+    if (param && js_node_error_is(param)) {
         js_parser_node_id_free(id);
-        return js_parser_error("element function: function <id> ( '<parameter list>' expected", arg_token, parameters);
+        return js_parser_error("element function: function <id> ( '<parameter list>' expected", arg_token, param);
     }
     
     js_node_def_token(arg_close_token);
     if (js_parser_type_not(')')) {
         js_parser_node_id_free(id);
-        js_node_free(parameters);
+        js_node_free(param);
         return js_parser_error("element function: function <id> ( <parameter list> ')' expected", arg_close_token, 0);
     }
     js_parser_next();
@@ -883,11 +884,11 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     struct js_node_t* statement = js_parser_statement(self);
     if (js_node_error_is(statement)) {
         js_parser_node_id_free(id);
-        js_node_free(parameters);
+        js_node_free(param);
         return js_parser_error("element function: function <id> ( <parameter list> ) '<statement>' expected", stmt_token, statement);
     }
     
-    return (struct js_node_t*) js_node_function_new(id, parameters, statement);
+    return (struct js_node_t*) js_node_function_new(id, param, statement);
 }
 
 struct js_node_t* js_parser_element_constructor(struct js_parser_t* self) {

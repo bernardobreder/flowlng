@@ -32,20 +32,21 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
-    test_js_node_exec("function a() do end", "");
-    test_js_node_exec("class a do end", "");
-    test_js_node_exec("class a do var a end", "");
-    test_js_node_exec("class a do function a() do end end", "");
-    test_js_node_exec("class a do constructor() do end end", "");
+    test_js_node_exec("function a() do end", "<object>");
+    test_js_node_exec("class a do end", "<object>");
+    test_js_node_exec("class a do var a end", "<object>");
+    test_js_node_exec("class a do function a() do end end", "<object>");
+    test_js_node_exec("class a do constructor() do end end", "<object>");
     test_js_node_exec("return 2+3", "5");
     test_js_node_exec("return 2-3", "-1");
     test_js_node_exec("return -2+3", "1");
     test_js_node_exec("return 2*3", "6");
-//    test_js_node_exec("return 4/2", "2");
-//    test_js_node_exec("return 4/-2", "-2");
+    test_js_node_exec("return 4/2", "2");
+    test_js_node_exec("return 4/-2", "-2");
+    test_js_node_exec("function a() do return 1 end return a()", "1");
     
     test_js_node_exec("return 1", "1");
-    test_js_node_exec("return 1.234", "1.234000");
+    test_js_node_exec("return 1.234", "1.234");
     test_js_node_exec("return true", "true");
     test_js_node_exec("return false", "false");
     test_js_node_exec("return null", "null");

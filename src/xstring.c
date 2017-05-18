@@ -1,6 +1,8 @@
 
 #include <stdint.h>
+#include <stddef.h>
 #include "platform.h"
+#include "xstring.h"
 
 js_hash js_hash_perform(char* text, size_t length) {
     js_hash hash = 1;

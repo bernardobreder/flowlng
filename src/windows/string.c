@@ -2,12 +2,12 @@
 #include <string.h>
 
 char* strndup (const char *s, size_t size) {
-    char *end = memchr(s, 0, size);
-    if (end) size = end - s + 1;
-    char* r = malloc(size);
+    //char *end = memchr(s, 0, size);
+    //if (end) size = end - s + 1;
+    char* r = malloc(size + 1);
     if (size) {
-        memcpy(r, s, size-1);
-        r[size-1] = '\0';
+        memcpy(r, s, size);
+        r[size] = '\0';
     }
     return r;
 }

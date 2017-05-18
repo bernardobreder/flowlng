@@ -111,6 +111,7 @@ int eval_func(struct flow_argument_t* arg_node) {
             }
         }
         struct js_context_t* context = js_context_new(memory);
+        js_context_push(context, js_value_obj_new(memory));
         {
             struct js_node_t* aux = node;
             while (aux) {
