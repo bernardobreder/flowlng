@@ -32,6 +32,7 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
+    test_js_node_exec("function a() do return 1 end a()", "<object>");
     test_js_node_exec("function a() do end", "<object>");
     test_js_node_exec("class a do end", "<object>");
     test_js_node_exec("class a do var a end", "<object>");
@@ -46,7 +47,7 @@ void test_js_node() {
     test_js_node_exec("function a() do return 1 end return a()", "1");
     test_js_node_exec("function a() do return 1 end function b() do return 1+a() end return b()", "2");
     test_js_node_exec("function a() do return 1 end function b() do return a()+a()+a() end return b()", "3");
-    
+
     test_js_node_exec("return 1", "1");
     test_js_node_exec("return 1.234", "1.234");
     test_js_node_exec("return true", "true");

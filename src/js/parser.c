@@ -753,6 +753,15 @@ struct js_node_t* js_parser_statement_variable(struct js_parser_t* self) {
     return head;
 }
 
+struct js_node_t* js_parser_statement_expression(struct js_parser_t* self) {
+    js_node_def_token(token);
+    struct js_node_t* node = js_parser_expression(self);
+    if (js_node_error_is(node)) {
+        return js_parser_error("statement expression:", token, node);
+    }
+    return js_node_cast(js_node_stmtexp_new(node));
+}
+
 struct js_node_t* js_parser_statement(struct js_parser_t* self) {
     if (js_parser_type(';')) {
         js_parser_next();
@@ -774,12 +783,7 @@ struct js_node_t* js_parser_statement(struct js_parser_t* self) {
     } else if (js_parser_type(JS_TOKEN_VAR)) {
         return js_parser_statement_variable(self);
     } else {
-        js_node_def_token(exp_token);
-        struct js_node_t* node = js_parser_expression(self);
-        if (js_node_error_is(node)) {
-            return js_parser_error("statement:", var_exp_token, node);
-        }
-        return node;
+        return js_parser_statement_expression(self);
     }
 }
 

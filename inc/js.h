@@ -629,6 +629,7 @@ void js_value_class_free(struct js_value_class_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);
+#define js_node_cast(VALUE) ((struct js_node_t*)(VALUE))
 #define js_node_free_typed(NODE) js_node_free((struct js_node_t*)NODE)
 #define js_node_head_typed(NODE) js_node_head((struct js_node_t*)NODE)
 #define js_node_body_typed(NODE) js_node_body((struct js_node_t*)NODE)
@@ -895,7 +896,7 @@ void js_node_continue_head(struct js_node_continue_t* self);
 void js_node_continue_body(struct js_node_continue_t* self);
 void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t* context);
 
-struct js_node_stmtexp_t* js_node_stmtexp_new();
+struct js_node_stmtexp_t* js_node_stmtexp_new(struct js_node_t* expression);
 void js_node_stmtexp_free(struct js_node_stmtexp_t* self);
 void js_node_stmtexp_head(struct js_node_stmtexp_t* self);
 void js_node_stmtexp_body(struct js_node_stmtexp_t* self);

@@ -480,6 +480,8 @@ struct js_node_empty_t* js_node_empty_new() {
 }
 
 void js_node_empty_free(struct js_node_empty_t* self) {
+    if (self->next) js_node_free_typed(self->next);
+    free(self);
 }
 
 void js_node_empty_head(struct js_node_empty_t* self) {
@@ -499,6 +501,8 @@ struct js_node_break_t* js_node_break_new() {
 }
 
 void js_node_break_free(struct js_node_break_t* self) {
+    if (self->next) js_node_free_typed(self->next);
+    free(self);
 }
 
 void js_node_break_head(struct js_node_break_t* self) {
@@ -518,6 +522,8 @@ struct js_node_continue_t* js_node_continue_new() {
 }
 
 void js_node_continue_free(struct js_node_continue_t* self) {
+    if (self->next) js_node_free_typed(self->next);
+    free(self);
 }
 
 void js_node_continue_head(struct js_node_continue_t* self) {
@@ -529,23 +535,32 @@ void js_node_continue_body(struct js_node_continue_t* self) {
 void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t* context) {
 }
 
-struct js_node_stmtexp_t* js_node_stmtexp_new() {
+struct js_node_stmtexp_t* js_node_stmtexp_new(struct js_node_t* expression) {
     struct js_node_stmtexp_t* self = (struct js_node_stmtexp_t*) malloc(sizeof(struct js_node_stmtexp_t));
-    self->type = JS_NODE_stmtexp;
+    self->type = JS_NODE_STMT_EXP;
     self->next = 0;
+    self->expression = expression;
     return self;
 }
 
 void js_node_stmtexp_free(struct js_node_stmtexp_t* self) {
+    js_node_free_typed(self->expression);
+    if (self->next) js_node_free_typed(self->next);
+    free(self);
 }
 
 void js_node_stmtexp_head(struct js_node_stmtexp_t* self) {
+    js_node_head_typed(self->expression);
 }
 
 void js_node_stmtexp_body(struct js_node_stmtexp_t* self) {
+    js_node_body_typed(self->expression);
 }
 
 void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* context) {
+    js_node_exec_typed(self->expression, context);
+    js_context_pop_def(context, value);
+    flow_memory_item_free(value);
 }
 
 struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement) {
