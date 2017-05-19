@@ -814,7 +814,7 @@ struct js_node_t* js_parser_statement_block(struct js_parser_t* self) {
     return head;
 }
 
-struct js_node_param_t* js_parser_parameter_list(struct js_parser_t* self) {
+struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
     js_node_def(head, tail);
     
     js_node_def_token(id_first_token);
@@ -840,10 +840,10 @@ struct js_node_param_t* js_parser_parameter_list(struct js_parser_t* self) {
     }
     
     js_node_def_end();
-    return (struct js_node_param_t*) head;
+    return head;
 }
 
-struct js_node_param_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
+struct js_node_t* js_parser_parameter_list_opt(struct js_parser_t* self) {
     if (js_parser_type_not(JS_TOKEN_ID)) return 0;
     return js_parser_parameter_list(self);
 }
@@ -866,7 +866,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     js_parser_next();
     
     js_node_def_token(arg_token);
-    struct js_node_param_t* param = js_parser_parameter_list_opt(self);
+    struct js_node_param_t* param = (struct js_node_param_t*) js_parser_parameter_list_opt(self);
     if (param && js_node_error_is(param)) {
         js_parser_node_id_free(id);
         return js_parser_error("element function: function <id> ( '<parameter list>' expected", arg_token, param);
@@ -875,7 +875,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     js_node_def_token(arg_close_token);
     if (js_parser_type_not(')')) {
         js_parser_node_id_free(id);
-        js_node_free(param);
+        js_node_free_typed(param);
         return js_parser_error("element function: function <id> ( <parameter list> ')' expected", arg_close_token, 0);
     }
     js_parser_next();
@@ -884,7 +884,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     struct js_node_t* statement = js_parser_statement(self);
     if (js_node_error_is(statement)) {
         js_parser_node_id_free(id);
-        js_node_free(param);
+        js_node_free_typed(param);
         return js_parser_error("element function: function <id> ( <parameter list> ) '<statement>' expected", stmt_token, statement);
     }
     

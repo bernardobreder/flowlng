@@ -111,18 +111,18 @@ int eval_func(struct flow_argument_t* arg_node) {
             }
         }
         struct js_context_t* context = js_context_new(memory);
-        js_context_push(context, js_value_obj_new(memory));
+        js_context_push_typed(context, js_value_obj_new(context));
         {
             struct js_node_t* aux = node;
             while (aux) {
                 if (js_node_error_is_not(aux)) {
                     js_node_exec(aux, context);
                     if (!js_context_empty(context)) {
-                        struct js_value_t* value = js_context_pop(context);
-                        char* chars = js_value_object_string_ansi(value);
+                        js_context_pop_def(context, value);
+                        char* chars = js_value_object_string_ansi((struct js_value_t*) value);
                         printf("%s\n", chars);
                         free(chars);
-                        js_value_free(value);
+                        js_value_free_typed(value);
                     }
                 }
                 aux = aux->next;

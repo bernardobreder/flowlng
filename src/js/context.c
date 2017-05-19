@@ -10,7 +10,7 @@ struct js_context_t* js_context_new(struct flow_memory_t* memory) {
 }
 
 void js_context_free(struct js_context_t* self) {
-    js_value_free(self->value);
+    js_value_free_typed(self->value);
     free(self);
 }
 

@@ -12,6 +12,7 @@ void js_value_free(struct js_value_t* self) {
         case JS_VALUE_BOOL:
             return;
         case JS_VALUE_STR: return js_value_str_free((struct js_value_str_t*) self);
+        case JS_VALUE_OBJ: return js_value_obj_free((struct js_value_obj_t*) self);
     }
     if (self->next) js_value_free(self->next);
     flow_memory_item_free(self);
@@ -101,12 +102,12 @@ void js_value_func_free(struct js_value_str_t* self) {
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_obj_new(struct js_context_t* context) {
+struct js_value_obj_t* js_value_obj_new(struct js_context_t* context) {
     struct js_value_obj_t* self = flow_memory_alloc_typed(context->memory, struct js_value_obj_t);
     self->type = JS_VALUE_OBJ;
     self->next = 0;
     self->field = 0;
-    return (struct js_value_t*) self;
+    return self;
 }
 
 void js_value_obj_free(struct js_value_obj_t* self) {

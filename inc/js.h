@@ -90,7 +90,6 @@
 #define JS_NODE_CALL 46
 #define JS_NODE_PARAM 47
 
-
 #define JS_VALUE_NULL 0
 #define JS_VALUE_BOOL 1
 #define JS_VALUE_NUM 2
@@ -99,6 +98,7 @@
 #define JS_VALUE_OBJ 5
 #define JS_VALUE_CLASS 6
 #define JS_VALUE_FUNC 7
+#define JS_VALUE_COBJ 8
 
 typedef unsigned char js_bool;
 typedef double js_num;
@@ -124,7 +124,7 @@ struct js_parser_t {
 
 struct js_context_t {
     struct flow_memory_t* memory;
-    struct js_value_obj_t* value;
+    struct js_value_t* value;
 };
 
 struct js_value_t {
@@ -556,8 +556,11 @@ struct js_value_t* js_context_pop(struct js_context_t* self);
 #define js_context_push_typed(CONTEXT, VALUE) js_context_push(CONTEXT, (struct js_value_t*) VALUE)
 #define js_context_pop_def(CONTEXT, NAME) struct js_value_t* NAME = js_context_pop(CONTEXT);
 #define js_context_memory(CONTEXT) CONTEXT->memory
-#define js_context_peek_obj(CONTEXT, NAME) \
-        struct js_value_obj_t* NAME = (struct js_value_obj_t*) CONTEXT->value;
+#define js_context_peek(CONTEXT, NAME) \
+        struct js_value_t* NAME = (struct js_value_t*) CONTEXT->value;
+#define js_context_peek_obj_or_push_null(CONTEXT, NAME) \
+        struct js_value_obj_t* NAME = (struct js_value_obj_t*) CONTEXT->value; \
+        if (!js_value_is_obj(NAME)) { js_context_push_typed(context, js_value_null()); return; }
 
 void js_value_free(struct js_value_t* self);
 struct js_value_t* js_value_null();
@@ -567,51 +570,65 @@ js_bool js_value_is_equal(struct js_context_t* context, struct js_value_t* left,
 js_int js_value_is_compare(struct js_context_t* context, struct js_value_t* left, struct js_value_t* right);
 #define js_value_def(NAME, VALUE) struct js_value_t* NAME = VALUE;
 #define js_value_bool(FLAG) ((FLAG) ? js_value_true() : js_value_false())
-#define js_value_exec_def(NAME, NODE) js_node_exec(NODE, context); struct js_value_t* NAME = js_context_pop(context);
-#define js_value_release(VALUE) js_value_free(VALUE);
+#define js_value_exec_def(NAME, NODE) js_node_exec(NODE, context); js_context_pop_def(context, NAME);
+#define js_value_free_typed(VALUE) js_value_free((struct js_value_t*)VALUE)
+#define js_value_release(VALUE) js_value_free_typed(VALUE);
 #define js_value_bool_value(VALUE) ((struct js_value_bool_t*)VALUE)->value
 #define js_value_bool_def(NAME, VALUE) js_bool NAME = js_value_is_bool(VALUE) ? js_value_bool_value(VALUE) : 0;
-#define js_value_func_def_new(NAME, CONTEXT, NODE_FUNCTION) js_value_def(NAME, js_value_func_new(js_context_memory(context), NODE_FUNCTION));
-#define js_value_class_def_new(NAME, CONTEXT) js_value_def(NAME, js_value_class_new(js_context_memory(context)));
+#define js_value_func_def_new(NAME, CONTEXT, FUNCTION_NODE) js_value_def(NAME, js_value_func_new(context, FUNCTION_NODE));
+#define js_value_class_def_new(CONTEXT, NAME, CLASS) js_value_def(NAME, js_value_class_new(context, CLASS));
 #define js_value_is_true(VALUE) (VALUE) == js_value_true()
 #define js_value_is_false(VALUE) (VALUE) != js_value_true()
 #define js_value_is_null(VALUE) (VALUE->type == JS_VALUE_NULL)
 #define js_value_is_bool(VALUE) (VALUE->type == JS_VALUE_BOOL)
 #define js_value_is_func(VALUE) (VALUE->type == JS_VALUE_FUNC)
 #define js_value_is_int(VALUE) (VALUE->type == JS_VALUE_INT)
+#define js_value_is_obj(VALUE) (VALUE->type == JS_VALUE_OBJ || VALUE->type == JS_VALUE_COBJ)
 #define js_value_is_num(VALUE) (VALUE->type == JS_VALUE_NUM)
 #define js_value_is_numint(VALUE) (VALUE->type == JS_VALUE_INT || VALUE->type == JS_VALUE_NUM)
 #define js_value_is_str(VALUE) (VALUE->type == JS_VALUE_STR)
+#define js_value_cast(VALUE) ((struct js_value_t*)(VALUE))
+#define js_value_obj_cast(VALUE) ((struct js_value_obj_t*)(VALUE))
+#define js_value_func_cast(VALUE) ((struct js_value_func_t*)(VALUE))
 #define js_value_int_def(NAME, VALUE) js_int NAME = js_value_int_value(VALUE);
 #define js_value_int_value(VALUE) ((struct js_value_int_t*)VALUE)->value
-#define js_value_int_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = js_value_int_new(CONTEXT->memory, VALUE);
+#define js_value_int_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = (struct js_value_t*) js_value_int_new(CONTEXT, VALUE);
 #define js_value_num_def(NAME, VALUE) js_num NAME = js_value_num_value(VALUE);
 #define js_value_num_value(VALUE) ((struct js_value_num_t*)VALUE)->value
-#define js_value_num_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = js_value_num_new(CONTEXT->memory, VALUE);
+#define js_value_num_new_def(CONTEXT, NAME, VALUE) struct js_value_t* NAME = (struct js_value_t*) js_value_num_new(CONTEXT, VALUE);
 #define js_value_numint_def(NAME, VALUE) js_num NAME = js_value_is_num(VALUE) ? js_value_num_value(VALUE) : (js_num)js_value_int_value(VALUE);
 #define js_value_str_def(NAME, VALUE) js_str NAME = js_value_str_value(VALUE);
 #define js_value_str_value(VALUE) ((struct js_value_str_t*)VALUE)->value
 #define js_value_str_len_def(NAME, VALUE) size_t NAME = strlen(js_value_str_value(VALUE));
 #define js_value_str_new_def(CONTEXT, NAME, VALUE, LENGTH, HASH) \
-        struct js_value_t* NAME = js_value_str_new(CONTEXT->memory, VALUE, LENGTH, HASH);
+        struct js_value_t* NAME = js_value_str_new(CONTEXT, VALUE, LENGTH, HASH);
 #define js_value_obj_to_str_def(NAME, VALUE) \
         js_str NAME = js_value_is_str(VALUE) ? js_value_str_value(VALUE) : js_value_object_string_ansi(VALUE);
 struct js_value_t* js_value_int_new(struct js_context_t* context, js_int value);
 struct js_value_t* js_value_num_new(struct js_context_t* context, js_num value);
 struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
-struct js_value_t* js_value_obj_new(struct js_context_t* context);
+struct js_value_obj_t* js_value_obj_new(struct js_context_t* context);
 #define js_value_obj_new_def(CONTEXT, NAME) struct js_value_obj_t* NAME = js_value_obj_new(CONTEXT);
+#define js_value_obj_def(NAME, VALUE) struct js_value_obj_t* NAME = (struct js_value_obj_t*) VALUE;
 void js_value_obj_free(struct js_value_obj_t* self);
 struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, struct js_node_id_t* name);
 void js_value_obj_field_set(struct js_context_t* context, struct js_value_obj_t* self, struct js_node_id_t* name, struct js_value_t* value);
-struct js_value_t* js_value_func_new(struct js_context_t* context);
+struct js_value_t* js_value_func_new(struct js_context_t* context, struct js_node_function_t* function);
 void js_value_func_free(struct js_value_str_t* self);
+struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str);
+void js_value_class_free(struct js_value_str_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);
 #define js_node_free_typed(NODE) js_node_free((struct js_node_t*)NODE)
+#define js_node_head_typed(NODE) js_node_head((struct js_node_t*)NODE)
+#define js_node_body_typed(NODE) js_node_body((struct js_node_t*)NODE)
+#define js_node_exec_typed(NODE, CONTEXT) js_node_exec((struct js_node_t*)NODE, CONTEXT)
 void js_node_compile(struct js_node_t* self);
+void js_nodes_head(struct js_node_t* self);
+void js_nodes_body(struct js_node_t* self);
+void js_nodes_exec(struct js_node_t* self, struct js_context_t* context);
 void js_node_head(struct js_node_t* self);
 void js_node_body(struct js_node_t* self);
 void js_node_exec(struct js_node_t* self, struct js_context_t* context);
@@ -882,7 +899,7 @@ void js_node_param_head(struct js_node_param_t* self);
 void js_node_param_body(struct js_node_param_t* self);
 void js_node_param_exec(struct js_node_param_t* self, struct js_context_t* context);
 
-struct js_node_function_t* js_node_function_new(struct js_node_id_t* name, struct js_node_t* params, struct js_node_t* statement);
+struct js_node_function_t* js_node_function_new(struct js_node_id_t* name, struct js_node_param_t* param, struct js_node_t* statement);
 void js_node_function_free(struct js_node_function_t* self);
 void js_node_function_head(struct js_node_function_t* self);
 void js_node_function_body(struct js_node_function_t* self);

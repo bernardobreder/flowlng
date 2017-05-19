@@ -13,17 +13,17 @@ static void test_js_node_exec(char* code, char* expected) {
     if (js_node_error_is(node)) {
         assert(0);
     } else {
-        js_node_head(node);
-        js_node_body(node);
+        js_nodes_head(node);
+        js_nodes_body(node);
         struct js_context_t* context = js_context_new(memory);
-        js_context_push(context, js_value_obj_new(memory));
-        js_node_exec(node, context);
+        js_context_push_typed(context, js_value_obj_new(context));
+        js_nodes_exec(node, context);
         if (!js_context_empty(context)) {
-            struct js_value_t* value = js_context_pop(context);
-            char* chars = js_value_object_string_ansi(value);
+            js_context_pop_def(context, value);
+            char* chars = js_value_object_string_ansi((struct js_value_t*) value);
             assert(!strcmp(expected, chars));
             free(chars);
-            js_value_free(value);
+            js_value_free_typed(value);
         }
         js_context_free(context);
         flow_memory_free(memory);
