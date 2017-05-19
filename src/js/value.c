@@ -13,6 +13,8 @@ void js_value_free(struct js_value_t* self) {
             return;
         case JS_VALUE_STR: return js_value_str_free((struct js_value_str_t*) self);
         case JS_VALUE_OBJ: return js_value_obj_free((struct js_value_obj_t*) self);
+        case JS_VALUE_FUNC: return js_value_func_free((struct js_value_func_t*) self);
+        case JS_VALUE_CLASS: return js_value_class_free((struct js_value_class_t*) self);
     }
     if (self->next) js_value_free(self->next);
     flow_memory_item_free(self);
@@ -81,8 +83,8 @@ struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_va
     return (struct js_value_t*) self;
 }
 
-void js_value_class_free(struct js_value_str_t* self) {
-    if (self->next) js_value_free(self->next);
+void js_value_class_free(struct js_value_class_t* self) {
+    if (self->next) js_value_free_typed(self->next);
     
     flow_memory_item_free(self);
 }
@@ -96,8 +98,8 @@ struct js_value_t* js_value_func_new(struct js_context_t* context, struct js_nod
     return (struct js_value_t*) self;
 }
 
-void js_value_func_free(struct js_value_str_t* self) {
-    if (self->next) js_value_free(self->next);
+void js_value_func_free(struct js_value_func_t* self) {
+    if (self->next) js_value_free_typed(self->next);
     flow_memory_release(self->function);
     flow_memory_item_free(self);
 }
@@ -112,10 +114,13 @@ struct js_value_obj_t* js_value_obj_new(struct js_context_t* context) {
 
 void js_value_obj_free(struct js_value_obj_t* self) {
     if (self->next) js_value_obj_free(self->next);
-    while (self->field) {
-        free(self->field->name);
-        js_value_free(self->field->value);
-        self->field = self->field->next;
+    struct js_value_obj_entry_t* field = self->field;
+    while (field) {
+        free(field->name);
+        js_value_free(field->value);
+        struct js_value_obj_entry_t* next = field->next;
+        flow_memory_item_free(field);
+        field = next;
     }
     flow_memory_item_free(self);
 }
@@ -124,14 +129,17 @@ struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, struct js
     struct js_value_obj_t* obj = self;
     while (obj) {
         struct js_value_obj_entry_t* entry = obj->field;
+        struct js_value_obj_entry_t* prev = 0;
         while (entry) {
             if (entry->hash == name->hash && entry->length == name->length && !strcmp(entry->name, name->word)) {
                 if (entry != obj->field) {
+                    prev->next = entry->next;
                     entry->next = obj->field;
                     obj->field = entry;
                 }
                 return entry->value;
             }
+            prev = entry;
             entry = entry->next;
         }
         obj = obj->next;
@@ -141,15 +149,18 @@ struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, struct js
 
 void js_value_obj_field_set(struct js_context_t* context, struct js_value_obj_t* self, struct js_node_id_t* name, struct js_value_t* value) {
     struct js_value_obj_entry_t* entry = self->field;
+    struct js_value_obj_entry_t* prev = 0;
     while (entry) {
         if (entry->hash == name->hash && entry->length == name->length && !strcmp(entry->name, name->word)) {
             if (entry != self->field) {
+                prev->next = entry->next;
                 entry->next = self->field;
                 self->field = entry;
             }
             entry->value = value;
             return;
         }
+        prev = entry;
         entry = entry->next;
     }
     entry = flow_memory_alloc_typed(context->memory, struct js_value_obj_entry_t);

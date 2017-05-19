@@ -615,9 +615,9 @@ void js_value_obj_free(struct js_value_obj_t* self);
 struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, struct js_node_id_t* name);
 void js_value_obj_field_set(struct js_context_t* context, struct js_value_obj_t* self, struct js_node_id_t* name, struct js_value_t* value);
 struct js_value_t* js_value_func_new(struct js_context_t* context, struct js_node_function_t* function);
-void js_value_func_free(struct js_value_str_t* self);
+void js_value_func_free(struct js_value_func_t* self);
 struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str);
-void js_value_class_free(struct js_value_str_t* self);
+void js_value_class_free(struct js_value_class_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
 void js_node_free(struct js_node_t* self);

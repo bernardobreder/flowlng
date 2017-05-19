@@ -44,6 +44,7 @@ void test_js_node() {
     test_js_node_exec("return 4/2", "2");
     test_js_node_exec("return 4/-2", "-2");
     test_js_node_exec("function a() do return 1 end return a()", "1");
+    test_js_node_exec("function a() do return 1 end function b() do return 1+a() end return b()", "2");
     
     test_js_node_exec("return 1", "1");
     test_js_node_exec("return 1.234", "1.234");
