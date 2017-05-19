@@ -89,6 +89,7 @@
 #define JS_NODE_ARRAY 45
 #define JS_NODE_CALL 46
 #define JS_NODE_PARAM 47
+#define JS_NODE_STMT_EXP 50
 
 #define JS_VALUE_NULL 0
 #define JS_VALUE_BOOL 1
@@ -535,6 +536,13 @@ struct js_node_while_t {
     struct js_node_t* statement;
 };
 
+struct js_node_stmtexp_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* expression;
+};
+
+
 #define js_str_hash_prime 13
 #define js_num_precision 0.0000001
 
@@ -870,19 +878,28 @@ void js_node_return_body(struct js_node_return_t* self);
 void js_node_return_exec(struct js_node_return_t* self, struct js_context_t* context);
 
 struct js_node_empty_t* js_node_empty_new();
+void js_node_empty_free(struct js_node_empty_t* self);
 void js_node_empty_head(struct js_node_empty_t* self);
 void js_node_empty_body(struct js_node_empty_t* self);
 void js_node_empty_exec(struct js_node_empty_t* self, struct js_context_t* context);
 
 struct js_node_break_t* js_node_break_new();
+void js_node_break_free(struct js_node_break_t* self);
 void js_node_break_head(struct js_node_break_t* self);
 void js_node_break_body(struct js_node_break_t* self);
 void js_node_break_exec(struct js_node_break_t* self, struct js_context_t* context);
 
 struct js_node_continue_t* js_node_continue_new();
+void js_node_continue_free(struct js_node_continue_t* self);
 void js_node_continue_head(struct js_node_continue_t* self);
 void js_node_continue_body(struct js_node_continue_t* self);
 void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t* context);
+
+struct js_node_stmtexp_t* js_node_stmtexp_new();
+void js_node_stmtexp_free(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_head(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_body(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* context);
 
 struct js_node_var_item_t* js_node_var_item_new(struct js_node_id_t* name, struct js_node_t* value);
 void js_node_var_item_free(struct js_node_var_item_t* self);
@@ -916,6 +933,12 @@ void js_node_field_free(struct js_node_field_t* self);
 void js_node_field_head(struct js_node_field_t* self);
 void js_node_field_body(struct js_node_field_t* self);
 void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context);
+
+struct js_node_stmtexp_t* js_node_stmtexp_new();
+void js_node_stmtexp_free(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_head(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_body(struct js_node_stmtexp_t* self);
+void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* context);
 
 struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement);
 void js_node_if_free(struct js_node_if_t* self);

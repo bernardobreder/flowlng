@@ -16,6 +16,7 @@ void js_node_free(struct js_node_t* self) {
         case JS_NODE_IF: return js_node_if_free((struct js_node_if_t*) self);
         case JS_NODE_WHILE: return js_node_while_free((struct js_node_while_t*) self);
         case JS_NODE_RETURN: return js_node_return_free((struct js_node_return_t*) self);
+        case JS_NODE_STMT_EXP: return js_node_stmtexp_free((struct js_node_stmtexp_t*) self);
         case JS_NODE_VAR_ITEM: return js_node_var_item_free((struct js_node_var_item_t*) self);
         case JS_NODE_ID: return js_node_id_free((struct js_node_id_t*) self);
         case JS_NODE_STRING: return js_node_string_free((struct js_node_string_t*) self);
@@ -25,6 +26,9 @@ void js_node_free(struct js_node_t* self) {
         case JS_NODE_FALSE: return js_node_false_free((struct js_node_false_t*) self);
         case JS_NODE_THIS: return js_node_this_free((struct js_node_this_t*) self);
         case JS_NODE_SUPER: return js_node_super_free((struct js_node_super_t*) self);
+        case JS_NODE_BREAK: return js_node_break_free((struct js_node_break_t*) self);
+        case JS_NODE_CONTINUE: return js_node_continue_free((struct js_node_continue_t*) self);
+        case JS_NODE_EMPTY: return js_node_empty_free((struct js_node_empty_t*) self);
         case JS_NODE_ASSIGNMENT: return js_node_assignment_free((struct js_node_assignment_t*) self);
         case JS_NODE_TERNARY: return js_node_ternary_free((struct js_node_ternary_t*) self);
         case JS_NODE_OR: return js_node_or_free((struct js_node_or_t*) self);
@@ -68,6 +72,7 @@ void js_node_head(struct js_node_t* self) {
         case JS_NODE_IF: return js_node_if_head((struct js_node_if_t*) self);
         case JS_NODE_WHILE: return js_node_while_head((struct js_node_while_t*) self);
         case JS_NODE_RETURN: return js_node_return_head((struct js_node_return_t*) self);
+        case JS_NODE_STMT_EXP: return js_node_stmtexp_head((struct js_node_stmtexp_t*) self);
         case JS_NODE_EMPTY: return js_node_empty_head((struct js_node_empty_t*) self);
         case JS_NODE_BREAK: return js_node_break_head((struct js_node_break_t*) self);
         case JS_NODE_CONTINUE: return js_node_continue_head((struct js_node_continue_t*) self);
@@ -121,6 +126,7 @@ void js_node_body(struct js_node_t* self) {
         case JS_NODE_IF: return js_node_if_body((struct js_node_if_t*) self);
         case JS_NODE_WHILE: return js_node_while_body((struct js_node_while_t*) self);
         case JS_NODE_RETURN: return js_node_return_body((struct js_node_return_t*) self);
+        case JS_NODE_STMT_EXP: return js_node_stmtexp_body((struct js_node_stmtexp_t*) self);
         case JS_NODE_EMPTY: return js_node_empty_body((struct js_node_empty_t*) self);
         case JS_NODE_BREAK: return js_node_break_body((struct js_node_break_t*) self);
         case JS_NODE_CONTINUE: return js_node_continue_body((struct js_node_continue_t*) self);
@@ -173,6 +179,7 @@ void js_node_exec(struct js_node_t* self, struct js_context_t* context) {
         case JS_NODE_FIELD: return js_node_field_exec((struct js_node_field_t*) self, context);
         case JS_NODE_IF: return js_node_if_exec((struct js_node_if_t*) self, context);
         case JS_NODE_WHILE: return js_node_while_exec((struct js_node_while_t*) self, context);
+        case JS_NODE_STMT_EXP: return js_node_stmtexp_exec((struct js_node_stmtexp_t*) self, context);
         case JS_NODE_RETURN: return js_node_return_exec((struct js_node_return_t*) self, context);
         case JS_NODE_EMPTY: return js_node_empty_exec((struct js_node_empty_t*) self, context);
         case JS_NODE_BREAK: return js_node_break_exec((struct js_node_break_t*) self, context);
@@ -472,6 +479,9 @@ struct js_node_empty_t* js_node_empty_new() {
     return self;
 }
 
+void js_node_empty_free(struct js_node_empty_t* self) {
+}
+
 void js_node_empty_head(struct js_node_empty_t* self) {
 }
 
@@ -486,6 +496,9 @@ struct js_node_break_t* js_node_break_new() {
     self->type = JS_NODE_BREAK;
     self->next = 0;
     return self;
+}
+
+void js_node_break_free(struct js_node_break_t* self) {
 }
 
 void js_node_break_head(struct js_node_break_t* self) {
@@ -504,6 +517,9 @@ struct js_node_continue_t* js_node_continue_new() {
     return self;
 }
 
+void js_node_continue_free(struct js_node_continue_t* self) {
+}
+
 void js_node_continue_head(struct js_node_continue_t* self) {
 }
 
@@ -511,6 +527,25 @@ void js_node_continue_body(struct js_node_continue_t* self) {
 }
 
 void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t* context) {
+}
+
+struct js_node_stmtexp_t* js_node_stmtexp_new() {
+    struct js_node_stmtexp_t* self = (struct js_node_stmtexp_t*) malloc(sizeof(struct js_node_stmtexp_t));
+    self->type = JS_NODE_stmtexp;
+    self->next = 0;
+    return self;
+}
+
+void js_node_stmtexp_free(struct js_node_stmtexp_t* self) {
+}
+
+void js_node_stmtexp_head(struct js_node_stmtexp_t* self) {
+}
+
+void js_node_stmtexp_body(struct js_node_stmtexp_t* self) {
+}
+
+void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* context) {
 }
 
 struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement) {
