@@ -249,16 +249,8 @@ void js_nodes_exec(struct js_node_t* self, struct js_context_t* context) {
 
 
 void js_node_compile(struct js_node_t* self) {
-    struct js_node_t* node = self;
-    while (node) {
-        if (js_node_error_is_not(node)) js_node_head_typed(node);
-        node = node->next;
-    }
-    node = self;
-    while (node) {
-        if (js_node_error_is_not(node)) js_node_body_typed(node);
-        node = node->next;
-    }
+    js_nodes_head(self);
+    js_nodes_body(self);
 }
 
 struct js_node_error_t* js_node_error_new(char* message, char* word, size_t line, size_t column, struct js_node_error_t* next) {
@@ -277,6 +269,15 @@ void js_node_error_free(struct js_node_error_t* self) {
     free(self->word);
     if (self->next) js_node_error_free(self->next);
     free(self);
+}
+
+struct js_node_error_t* js_nodes_error_is(struct js_node_t* self) {
+    struct js_node_t* node = self;
+    while (node) {
+        if (js_node_error_is(node)) return js_node_error_type(node);
+        node = node->next;
+    }
+    return 0;
 }
 
 struct js_node_error_t* js_node_error_revert(struct js_node_error_t* self) {
@@ -325,11 +326,11 @@ void js_node_class_free(struct js_node_class_t* self) {
 }
 
 void js_node_class_head(struct js_node_class_t* self) {
-    js_node_id_head(self->name);
+    js_node_head_typed(self->name);
 }
 
 void js_node_class_body(struct js_node_class_t* self) {
-    js_node_id_body(self->name);
+    js_node_body_typed(self->name);
 }
 
 void js_node_class_exec(struct js_node_class_t* self, struct js_context_t* context) {
@@ -382,16 +383,16 @@ struct js_node_param_t* js_node_param_new(struct js_node_id_t* name) {
 }
 
 void js_node_param_free(struct js_node_param_t* self) {
-    js_node_id_free(self->name);
+    js_node_free_typed(self->name);
     js_node_free_self(self);
 }
 
 void js_node_param_head(struct js_node_param_t* self) {
-    js_node_id_head(self->name);
+    js_node_head_typed(self->name);
 }
 
 void js_node_param_body(struct js_node_param_t* self) {
-    js_node_id_body(self->name);
+    js_node_body_typed(self->name);
 }
 
 void js_node_param_exec(struct js_node_param_t* self, struct js_context_t* context) {
@@ -440,11 +441,11 @@ void js_node_field_free(struct js_node_field_t* self) {
 }
 
 void js_node_field_head(struct js_node_field_t* self) {
-    js_node_id_head(self->name);
+    js_node_head_typed(self->name);
 }
 
 void js_node_field_body(struct js_node_field_t* self) {
-    js_node_id_body(self->name);
+    js_node_body_typed(self->name);
 }
 
 void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context) {
@@ -1464,21 +1465,9 @@ void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) 
         js_value_release(right);
         js_context_push_typed(context, value);
     } else if (js_value_is_str(left)) {
-        js_value_str_def(str_left, left);
-        js_value_obj_to_str_def(str_right, right);
-        js_value_str_len_def(str_len_left, left);
-        js_value_str_len_def(str_len_right, right);
-        size_t length = str_len_left + str_len_right;
-        js_char buffer[length + 1];
-        strncpy(buffer, str_left, str_len_left);
-        strncpy(buffer + str_len_left, str_right, str_len_right);
-        buffer[length] = 0;
-        js_hash hash = 1;
-        int n; for (n = 0 ; n < length ; n++) { hash += js_str_hash_prime * buffer[n]; }
-        js_value_str_new_def(context, value, buffer, length, hash)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_push_typed(context, right);
+        js_context_push_typed(context, left);
+        js_value_str_concat(context);
     } else {
         js_value_release(right);
         js_context_push_typed(context, left);

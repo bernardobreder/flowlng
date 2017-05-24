@@ -11,6 +11,8 @@ void js_value_free(struct js_value_t* self) {
         case JS_VALUE_NULL:
         case JS_VALUE_BOOL:
             return;
+        case JS_VALUE_INT: return js_value_int_free((struct js_value_int_t*) self);
+        case JS_VALUE_NUM: return js_value_num_free((struct js_value_num_t*) self);
         case JS_VALUE_STR: return js_value_str_free((struct js_value_str_t*) self);
         case JS_VALUE_OBJ: return js_value_obj_free((struct js_value_obj_t*) self);
         case JS_VALUE_FUNC: return js_value_func_free((struct js_value_func_t*) self);
@@ -40,15 +42,32 @@ struct js_value_t* js_value_int_new(struct js_context_t* context, js_int value) 
     self->type = JS_VALUE_INT;
     self->next = 0;
     self->value = value;
+    self->str_value = 0;
+    self->str_size_value = 0;
     return (struct js_value_t*) self;
 }
+
+void js_value_int_free(struct js_value_int_t* self) {
+    js_free_nullable(self->str_value);
+    if (self->next) js_value_free(self->next);
+    flow_memory_item_free(self);
+}
+
 
 struct js_value_t* js_value_num_new(struct js_context_t* context, js_num value) {
     struct js_value_num_t* self = flow_memory_alloc_typed(context->memory, struct js_value_num_t);
     self->type = JS_VALUE_NUM;
     self->next = 0;
     self->value = value;
+    self->str_value = 0;
+    self->str_size_value = 0;
     return (struct js_value_t*) self;
+}
+
+void js_value_num_free(struct js_value_num_t* self) {
+    js_free_nullable(self->str_value);
+    if (self->next) js_value_free(self->next);
+    flow_memory_item_free(self);
 }
 
 struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, uint64 hash) {
@@ -170,28 +189,6 @@ void js_value_obj_field_set(struct js_context_t* context, struct js_value_obj_t*
     entry->value = value;
     entry->next = self->field;
     self->field = entry;
-}
-
-char* js_value_object_string_ansi(struct js_value_t* self) {
-    switch (self->type) {
-        case JS_VALUE_NULL: return strdup("null");
-        case JS_VALUE_FUNC: return strdup("function");
-        case JS_VALUE_CLASS: return strdup("class");
-        case JS_VALUE_OBJ: return strdup("<object>");
-        case JS_VALUE_BOOL: return strdup(js_value_bool_value(self) ? "true" : "false");
-        case JS_VALUE_STR: return strdup(((struct js_value_str_t*)self)->value );
-        case JS_VALUE_INT: {
-            char chars[32];
-            sprintf(chars, "%ld", ((struct js_value_int_t*)self)->value);
-            return strdup(chars);
-        }
-        case JS_VALUE_NUM: {
-            char chars[64];
-            sprintf(chars, "%.6g", ((struct js_value_num_t*)self)->value);
-            return strdup(chars);
-        }
-        default: return strdup("unknown value type");
-    }
 }
 
 js_bool js_value_is_equal(struct js_context_t* context, struct js_value_t* left, struct js_value_t* right) {

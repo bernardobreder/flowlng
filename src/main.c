@@ -119,9 +119,7 @@ int eval_func(struct flow_argument_t* arg_node) {
                     js_node_exec(aux, context);
                     if (!js_context_empty(context)) {
                         js_context_pop_def(context, value);
-                        char* chars = js_value_object_string_ansi((struct js_value_t*) value);
-                        printf("%s\n", chars);
-                        free(chars);
+                        printf("%s\n", js_value_str_ansi((struct js_value_t*) value));
                         js_value_free_typed(value);
                     }
                 }
@@ -144,6 +142,44 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
     } else if (help_mode) {
         help_func();
     } else {
+        struct flow_memory_t* memory = flow_memory_new();
+        struct flow_argument_t* arg = arg_node;
+        while (arg) {
+            char* source = (char*) flow_io_file(arg->value);
+            if (source) {
+                struct js_token_t* tokens = js_lexer(source);
+                struct js_parser_t* parser = js_parser_new(tokens);
+                struct js_node_t* node = js_parser(parser, tokens);
+                js_parser_free(parser);
+                js_tokens_free(tokens);
+                struct js_node_error_t* error = js_nodes_error_is(node);
+                if (error) {
+                    js_node_error_print(js_node_error_revert(error));
+                } else {
+                    js_nodes_head_typed(node);
+                    js_nodes_body_typed(node);
+                    struct js_context_t* context = js_context_new(memory);
+                    js_context_push_typed(context, js_value_obj_new(context));
+                    js_nodes_exec_typed(node, context);
+                    if (!js_context_empty(context)) {
+                        js_context_pop_def(context, value);
+                        printf("%s\n", js_value_str_ansi((struct js_value_t*) value));
+                        js_value_free_typed(value);
+                    }
+                    js_context_free(context);
+                    js_node_free(node);
+                }
+            } else {
+                printf("[fatal]: file not found: %s\n", arg->value);
+            }
+            
+            struct flow_argument_t* arg_next = arg_node->next;
+            free(arg->value);
+            free(arg);
+            arg = arg_next;
+        }
+        flow_memory_free(memory);
+
         //printf("Creating watch\n");
         //struct watch_t* watch = watch_new();
         //watch_dir(watch, "/Users/bernardobreder/git/flowlng/src");

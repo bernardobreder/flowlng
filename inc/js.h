@@ -104,6 +104,7 @@
 typedef unsigned char js_bool;
 typedef double js_num;
 typedef long js_int;
+typedef size_t js_size;
 typedef char js_char;
 typedef js_char* js_str;
 typedef void* js_obj;
@@ -148,12 +149,16 @@ struct js_value_int_t {
     unsigned char type;
     struct js_value_t* next;
     js_int value;
+    js_str str_value;
+    js_size str_size_value;
 };
 
 struct js_value_num_t {
     unsigned char type;
     struct js_value_t* next;
     js_num value;
+    js_str str_value;
+    js_size str_size_value;
 };
 
 struct js_value_str_t {
@@ -544,6 +549,7 @@ struct js_node_stmtexp_t {
 
 
 #define js_free(OBJ) free(OBJ)
+#define js_free_nullable(OBJ) if (OBJ) { free(OBJ); }
 #define js_str_hash_prime 13
 #define js_num_precision 0.0000001
 
@@ -608,13 +614,15 @@ js_int js_value_is_compare(struct js_context_t* context, struct js_value_t* left
 #define js_value_numint_def(NAME, VALUE) js_num NAME = js_value_is_num(VALUE) ? js_value_num_value(VALUE) : (js_num)js_value_int_value(VALUE);
 #define js_value_str_def(NAME, VALUE) js_str NAME = js_value_str_value(VALUE);
 #define js_value_str_value(VALUE) ((struct js_value_str_t*)VALUE)->value
-#define js_value_str_len_def(NAME, VALUE) size_t NAME = strlen(js_value_str_value(VALUE));
+#define js_value_str_len_def(NAME, VALUE) js_size NAME = js_value_str_len(VALUE);
 #define js_value_str_new_def(CONTEXT, NAME, VALUE, LENGTH, HASH) \
         struct js_value_t* NAME = js_value_str_new(CONTEXT, VALUE, LENGTH, HASH);
-#define js_value_obj_to_str_def(NAME, VALUE) \
-        js_str NAME = js_value_is_str(VALUE) ? js_value_str_value(VALUE) : js_value_object_string_ansi(VALUE);
+#define js_value_to_str_def(NAME, VALUE) \
+        const js_str NAME = js_value_is_str(VALUE) ? js_value_str_value(VALUE) : js_value_str_ansi(VALUE);
 struct js_value_t* js_value_int_new(struct js_context_t* context, js_int value);
+void js_value_int_free(struct js_value_int_t* self);
 struct js_value_t* js_value_num_new(struct js_context_t* context, js_num value);
+void js_value_num_free(struct js_value_num_t* self);
 struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, js_hash hash);
 void js_value_str_free(struct js_value_str_t* self);
 struct js_value_obj_t* js_value_obj_new(struct js_context_t* context);
@@ -627,7 +635,10 @@ struct js_value_t* js_value_func_new(struct js_context_t* context, struct js_nod
 void js_value_func_free(struct js_value_func_t* self);
 struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str);
 void js_value_class_free(struct js_value_class_t* self);
-char* js_value_object_string_ansi(struct js_value_t* self);
+const js_str js_value_str_ansi(struct js_value_t* self);
+js_size js_value_str_len(struct js_value_t* self);
+
+void js_value_str_concat(struct js_context_t* context);
 
 #define js_node_cast(VALUE) ((struct js_node_t*)(VALUE))
 #define js_node_free_self(NODE) \
@@ -651,6 +662,7 @@ void js_node_exec(struct js_node_t* self, struct js_context_t* context);
 
 struct js_node_error_t* js_node_error_new(char* message, char* word, size_t line, size_t column, struct js_node_error_t* next);
 void js_node_error_free(struct js_node_error_t* self);
+struct js_node_error_t* js_nodes_error_is(struct js_node_t* self);
 struct js_node_error_t* js_node_error_revert(struct js_node_error_t* self);
 void js_node_error_print(struct js_node_error_t* self);
 #define js_node_error_type(SELF) ((struct js_node_error_t*)SELF)

@@ -13,7 +13,7 @@ gcc \
     src/js/*.c \
     src/test/js/*.c \
     -framework CoreServices \
-    -w -g -o dist/flow
+    -w -O3 -o dist/flow
 
 echo Executing...
 dist/flow -t

@@ -21,9 +21,8 @@ static void test_js_node_exec(char* code, char* expected) {
         js_nodes_exec_typed(node, context);
         if (!js_context_empty(context)) {
             js_context_pop_def(context, value);
-            char* chars = js_value_object_string_ansi((struct js_value_t*) value);
+            const char* chars = js_value_str_ansi((struct js_value_t*) value);
             assert(!strcmp(expected, chars));
-            free(chars);
             js_value_free_typed(value);
         }
         js_context_free(context);
@@ -41,6 +40,8 @@ void test_js_node() {
     test_js_node_exec("class a do function a() do end end", "<object>");
     test_js_node_exec("class a do constructor() do end end", "<object>");
     test_js_node_exec("return 2+3", "5");
+    test_js_node_exec("return \"a\"+\"b\"", "ab");
+    test_js_node_exec("return \"a\"+1", "a1");
     test_js_node_exec("return 2-3", "-1");
     test_js_node_exec("return -2+3", "1");
     test_js_node_exec("return 2*3", "6");
