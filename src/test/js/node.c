@@ -11,13 +11,14 @@ static void test_js_node_exec(char* code, char* expected) {
     js_parser_free(parser);
     js_tokens_free(tokens);
     if (js_node_error_is(node)) {
+        js_node_error_print(js_node_error_revert(js_node_error_type(node)));
         assert(0);
     } else {
         js_nodes_head(node);
         js_nodes_body(node);
         struct js_context_t* context = js_context_new(memory);
         js_context_push_typed(context, js_value_obj_new(context));
-        js_nodes_exec(node, context);
+        js_nodes_exec_typed(node, context);
         if (!js_context_empty(context)) {
             js_context_pop_def(context, value);
             char* chars = js_value_object_string_ansi((struct js_value_t*) value);
@@ -27,11 +28,12 @@ static void test_js_node_exec(char* code, char* expected) {
         }
         js_context_free(context);
         flow_memory_free(memory);
-        js_node_free(node);
+        js_node_free_typed(node);
     }
 }
 
 void test_js_node() {
+    test_js_node_exec("function a() do function b() do return 1 end return b() end return a()", "1");
     test_js_node_exec("function a() do return 1 end a()", "<object>");
     test_js_node_exec("function a() do end", "<object>");
     test_js_node_exec("class a do end", "<object>");

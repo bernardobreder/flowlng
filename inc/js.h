@@ -543,6 +543,7 @@ struct js_node_stmtexp_t {
 };
 
 
+#define js_free(OBJ) free(OBJ)
 #define js_str_hash_prime 13
 #define js_num_precision 0.0000001
 
@@ -628,16 +629,22 @@ struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_va
 void js_value_class_free(struct js_value_class_t* self);
 char* js_value_object_string_ansi(struct js_value_t* self);
 
-void js_node_free(struct js_node_t* self);
 #define js_node_cast(VALUE) ((struct js_node_t*)(VALUE))
+#define js_node_free_self(NODE) \
+        if (self->next) js_node_free_typed(self->next); \
+        js_free(self);
 #define js_node_free_typed(NODE) js_node_free((struct js_node_t*)NODE)
 #define js_node_head_typed(NODE) js_node_head((struct js_node_t*)NODE)
+#define js_nodes_head_typed(NODE) js_nodes_head((struct js_node_t*)NODE)
 #define js_node_body_typed(NODE) js_node_body((struct js_node_t*)NODE)
+#define js_nodes_body_typed(NODE) js_nodes_body((struct js_node_t*)NODE)
 #define js_node_exec_typed(NODE, CONTEXT) js_node_exec((struct js_node_t*)NODE, CONTEXT)
+#define js_nodes_exec_typed(NODE, CONTEXT) js_nodes_exec((struct js_node_t*)NODE, CONTEXT)
 void js_node_compile(struct js_node_t* self);
 void js_nodes_head(struct js_node_t* self);
 void js_nodes_body(struct js_node_t* self);
 void js_nodes_exec(struct js_node_t* self, struct js_context_t* context);
+void js_node_free(struct js_node_t* self);
 void js_node_head(struct js_node_t* self);
 void js_node_body(struct js_node_t* self);
 void js_node_exec(struct js_node_t* self, struct js_context_t* context);

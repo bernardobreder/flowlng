@@ -762,31 +762,6 @@ struct js_node_t* js_parser_statement_expression(struct js_parser_t* self) {
     return js_node_cast(js_node_stmtexp_new(node));
 }
 
-struct js_node_t* js_parser_statement(struct js_parser_t* self) {
-    if (js_parser_type(';')) {
-        js_parser_next();
-        return js_parser_empty_new();
-    } else if (js_parser_type(JS_TOKEN_BREAK)) {
-        js_parser_next();
-        return (struct js_node_t*) js_node_break_new();
-    } else if (js_parser_type(JS_TOKEN_CONTINUE)) {
-        js_parser_next();
-        return (struct js_node_t*) js_node_continue_new();
-    } else if (js_parser_type(JS_TOKEN_DO)) {
-        return js_parser_statement_block(self);
-    } else if (js_parser_type(JS_TOKEN_IF)) {
-        return js_parser_statement_if(self);
-    } else if (js_parser_type(JS_TOKEN_WHILE)) {
-        return js_parser_statement_while(self);
-    } else if (js_parser_type(JS_TOKEN_RETURN)) {
-        return js_parser_statement_return(self);
-    } else if (js_parser_type(JS_TOKEN_VAR)) {
-        return js_parser_statement_variable(self);
-    } else {
-        return js_parser_statement_expression(self);
-    }
-}
-
 struct js_node_t* js_parser_statement_block(struct js_parser_t* self) {
     js_node_def(head, tail);
     js_parser_next();
@@ -1027,14 +1002,37 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
     return (struct js_node_t*) js_node_class_new(id, extends, constructor_head, field_head, method_head);
 }
 
-struct js_node_t* js_parser_element(struct js_parser_t* self) {
-    if (js_parser_type(JS_TOKEN_FUNCTION)) {
+struct js_node_t* js_parser_statement(struct js_parser_t* self) {
+    if (js_parser_type(';')) {
+        js_parser_next();
+        return js_parser_empty_new();
+    } else if (js_parser_type(JS_TOKEN_BREAK)) {
+        js_parser_next();
+        return (struct js_node_t*) js_node_break_new();
+    } else if (js_parser_type(JS_TOKEN_CONTINUE)) {
+        js_parser_next();
+        return (struct js_node_t*) js_node_continue_new();
+    } else if (js_parser_type(JS_TOKEN_DO)) {
+        return js_parser_statement_block(self);
+    } else if (js_parser_type(JS_TOKEN_IF)) {
+        return js_parser_statement_if(self);
+    } else if (js_parser_type(JS_TOKEN_WHILE)) {
+        return js_parser_statement_while(self);
+    } else if (js_parser_type(JS_TOKEN_RETURN)) {
+        return js_parser_statement_return(self);
+    } else if (js_parser_type(JS_TOKEN_VAR)) {
+        return js_parser_statement_variable(self);
+    } else if (js_parser_type(JS_TOKEN_FUNCTION)) {
         return js_parser_element_function(self);
     } else if (js_parser_type(JS_TOKEN_CLASS)) {
         return js_parser_element_class(self);
     } else {
-        return js_parser_statement(self);
+        return js_parser_statement_expression(self);
     }
+}
+
+struct js_node_t* js_parser_element(struct js_parser_t* self) {
+    return js_parser_statement(self);
 }
 
 struct js_node_t* js_parser(struct js_parser_t* self, struct js_token_t* tokens) {

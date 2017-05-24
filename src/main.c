@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     }
     
     if (loop_mode) {
-        for (;;) {
+        int n; for (n = 0 ;; n++) {
             exec_func(test_mode, eval_mode, help_mode, arg_head);
         }
     } else return exec_func(test_mode, eval_mode, help_mode, arg_head);
