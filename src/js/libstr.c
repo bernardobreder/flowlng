@@ -4,6 +4,22 @@
 #include <string.h>
 #include "js.h"
 
+struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, uint64 hash) {
+    struct js_value_str_t* self = flow_memory_alloc_typed(context->memory, struct js_value_str_t);
+    self->type = JS_VALUE_STR;
+    self->next = 0;
+    self->value = strdup(value);
+    self->length = length;
+    self->hash = hash;
+    return (struct js_value_t*) self;
+}
+
+void js_value_str_free(struct js_value_str_t* self) {
+    free(self->value);
+    if (self->next) js_value_free(self->next);
+    flow_memory_item_free(self);
+}
+
 void js_value_str_concat(struct js_context_t* context) {
     js_context_pop_def(context, left);
     js_context_pop_def(context, right);
@@ -16,8 +32,7 @@ void js_value_str_concat(struct js_context_t* context) {
     strncpy(buffer, str_left, str_len_left);
     strncpy(buffer + str_len_left, str_right, str_len_right);
     buffer[length] = 0;
-    js_hash hash = 1;
-    int n; for (n = 0 ; n < length ; n++) { hash += js_str_hash_prime * buffer[n]; }
+    js_hash hash = js_value_str_hash_concat(left, right);
     js_value_str_new_def(context, value, buffer, length, hash);
     js_value_release(left);
     js_value_release(right);
@@ -78,4 +93,32 @@ js_size js_value_str_len(struct js_value_t* self) {
         }
         default: return 9;
     }
+}
+
+js_hash js_value_str_hash(struct js_value_t* self) {
+    switch (self->type) {
+        case JS_VALUE_NULL: return 0;
+        case JS_VALUE_FUNC: return JS_VALUE_FUNC;
+        case JS_VALUE_CLASS: return JS_VALUE_CLASS;
+        case JS_VALUE_OBJ: return JS_VALUE_OBJ;
+        case JS_VALUE_BOOL: return js_value_bool_value(self) ? JS_VALUE_BOOL : JS_VALUE_BOOL + 1;
+        case JS_VALUE_STR: return ((struct js_value_str_t*)self)->hash;
+        case JS_VALUE_INT: {
+            struct js_value_int_t* int_value = (struct js_value_int_t*) self;
+            return int_value->value;
+        }
+        case JS_VALUE_NUM: {
+            struct js_value_num_t* num_value = (struct js_value_num_t*) self;
+            return (js_hash) num_value->value;
+        }
+        default: return 0;
+    }
+}
+
+js_hash js_value_str_hash_concat(struct js_value_t* left, struct js_value_t* right) {
+    js_hash hash = js_value_str_hash(left);
+    js_value_to_str_def(str_right, right);
+    js_value_str_len_def(str_len_right, right);
+    int n; for (n = 0 ; n < str_len_right ; n++) { hash += js_str_hash_prime * str_right[n]; }
+    return hash;
 }

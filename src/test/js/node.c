@@ -32,6 +32,7 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
+    test_js_node_exec("return \"a\"+\"b\"", "ab");
     test_js_node_exec("function a() do function b() do return 1 end return b() end return a()", "1");
     test_js_node_exec("function a() do return 1 end a()", "<object>");
     test_js_node_exec("function a() do end", "<object>");
@@ -40,7 +41,6 @@ void test_js_node() {
     test_js_node_exec("class a do function a() do end end", "<object>");
     test_js_node_exec("class a do constructor() do end end", "<object>");
     test_js_node_exec("return 2+3", "5");
-    test_js_node_exec("return \"a\"+\"b\"", "ab");
     test_js_node_exec("return \"a\"+1", "a1");
     test_js_node_exec("return 2-3", "-1");
     test_js_node_exec("return -2+3", "1");
@@ -48,6 +48,7 @@ void test_js_node() {
     test_js_node_exec("return 4/2", "2");
     test_js_node_exec("return 4/-2", "-2");
     test_js_node_exec("function a() do return 1 end return a()", "1");
+    test_js_node_exec("function a() do return 1 end function b() do return a()+1 end return b()", "2");
     test_js_node_exec("function a() do return 1 end function b() do return 1+a() end return b()", "2");
     test_js_node_exec("function a() do return 1 end function b() do return a()+a()+a() end return b()", "3");
 

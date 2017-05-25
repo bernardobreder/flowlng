@@ -367,10 +367,10 @@ void js_node_function_body(struct js_node_function_t* self) {
 
 void js_node_function_exec(struct js_node_function_t* self, struct js_context_t* context) {
     js_value_func_def_new(func, context, self);
-    js_context_peek(context, value);
+    js_context_peek_def(context, value);
     if (js_value_is_obj(value)) {
         js_value_obj_def(obj, value);
-        js_value_obj_field_set(context, obj, self->name, func);
+        js_value_obj_set(context, obj, self->name, func);
     }
 }
 
@@ -675,7 +675,7 @@ void js_node_id_body(struct js_node_id_t* self) {
 
 void js_node_id_exec(struct js_node_id_t* self, struct js_context_t* context) {
     js_context_peek_obj_or_push_null(context, obj);
-    js_value_def(value, js_value_obj_field_get(obj, self));
+    js_value_def(value, js_value_obj_get(obj, self));
     js_context_push_typed(context, value);
 }
 
@@ -1450,23 +1450,13 @@ void js_node_sum_body(struct js_node_sum_t* self) {
 void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    if (js_value_is_int(left) && js_value_is_int(left)) {
-        js_value_int_def(int_left, left);
-        js_value_int_def(int_right, right);
-        js_value_int_new_def(context, value, int_left + int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
-    } else if (js_value_is_numint(left) && js_value_is_numint(left)) {
-        js_value_numint_def(int_left, left);
-        js_value_numint_def(int_right, right);
-        js_value_num_new_def(context, value, int_left + int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+    js_context_push_typed(context, right);
+    js_context_push_typed(context, left);
+    if (js_value_is_int(left)) {
+        js_value_int_sum(context);
+    } else if (js_value_is_num(left)) {
+        js_value_num_sum(context);
     } else if (js_value_is_str(left)) {
-        js_context_push_typed(context, right);
-        js_context_push_typed(context, left);
         js_value_str_concat(context);
     } else {
         js_value_release(right);
@@ -1868,7 +1858,7 @@ void js_node_call_exec(struct js_node_call_t* self, struct js_context_t* context
         while (func_param_node) {
             js_nodes_exec_typed(call_param_node, context);
             js_context_pop_def(context, value_param);
-            js_value_obj_field_set(context, param_obj, func_param_node->name, value_param);
+            js_value_obj_set(context, param_obj, func_param_node->name, value_param);
             func_param_node = (struct js_node_param_t*) func_param_node->next;
             call_param_node = call_param_node->next;
         }
@@ -1884,6 +1874,5 @@ void js_node_call_exec(struct js_node_call_t* self, struct js_context_t* context
         js_value_free_typed(var_obj);
     } else {
         js_context_push_typed(context, js_value_null());
-
     }
 }

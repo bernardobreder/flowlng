@@ -37,55 +37,6 @@ struct js_value_t* js_value_false() {
     return (struct js_value_t*) &value;
 }
 
-struct js_value_t* js_value_int_new(struct js_context_t* context, js_int value) {
-    struct js_value_int_t* self = flow_memory_alloc_typed(context->memory, struct js_value_int_t);
-    self->type = JS_VALUE_INT;
-    self->next = 0;
-    self->value = value;
-    self->str_value = 0;
-    self->str_size_value = 0;
-    return (struct js_value_t*) self;
-}
-
-void js_value_int_free(struct js_value_int_t* self) {
-    js_free_nullable(self->str_value);
-    if (self->next) js_value_free(self->next);
-    flow_memory_item_free(self);
-}
-
-
-struct js_value_t* js_value_num_new(struct js_context_t* context, js_num value) {
-    struct js_value_num_t* self = flow_memory_alloc_typed(context->memory, struct js_value_num_t);
-    self->type = JS_VALUE_NUM;
-    self->next = 0;
-    self->value = value;
-    self->str_value = 0;
-    self->str_size_value = 0;
-    return (struct js_value_t*) self;
-}
-
-void js_value_num_free(struct js_value_num_t* self) {
-    js_free_nullable(self->str_value);
-    if (self->next) js_value_free(self->next);
-    flow_memory_item_free(self);
-}
-
-struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, uint64 hash) {
-    struct js_value_str_t* self = flow_memory_alloc_typed(context->memory, struct js_value_str_t);
-    self->type = JS_VALUE_STR;
-    self->next = 0;
-    self->value = strdup(value);
-    self->length = length;
-    self->hash = hash;
-    return (struct js_value_t*) self;
-}
-
-void js_value_str_free(struct js_value_str_t* self) {
-    free(self->value);
-    if (self->next) js_value_free(self->next);
-    flow_memory_item_free(self);
-}
-
 struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str) {
     struct js_value_class_t* self = flow_memory_alloc_typed(context->memory, struct js_value_class_t);
     self->type = JS_VALUE_CLASS;
@@ -121,74 +72,6 @@ void js_value_func_free(struct js_value_func_t* self) {
     if (self->next) js_value_free_typed(self->next);
     flow_memory_release(self->function);
     flow_memory_item_free(self);
-}
-
-struct js_value_obj_t* js_value_obj_new(struct js_context_t* context) {
-    struct js_value_obj_t* self = flow_memory_alloc_typed(context->memory, struct js_value_obj_t);
-    self->type = JS_VALUE_OBJ;
-    self->next = 0;
-    self->field = 0;
-    return self;
-}
-
-void js_value_obj_free(struct js_value_obj_t* self) {
-    if (self->next) js_value_obj_free(self->next);
-    struct js_value_obj_entry_t* field = self->field;
-    while (field) {
-        free(field->name);
-        js_value_free(field->value);
-        struct js_value_obj_entry_t* next = field->next;
-        flow_memory_item_free(field);
-        field = next;
-    }
-    flow_memory_item_free(self);
-}
-
-struct js_value_t* js_value_obj_field_get(struct js_value_obj_t* self, struct js_node_id_t* name) {
-    struct js_value_obj_t* obj = self;
-    while (obj) {
-        struct js_value_obj_entry_t* entry = obj->field;
-        struct js_value_obj_entry_t* prev = 0;
-        while (entry) {
-            if (entry->hash == name->hash && entry->length == name->length && !strcmp(entry->name, name->word)) {
-                if (entry != obj->field) {
-                    prev->next = entry->next;
-                    entry->next = obj->field;
-                    obj->field = entry;
-                }
-                return entry->value;
-            }
-            prev = entry;
-            entry = entry->next;
-        }
-        obj = obj->next;
-    }
-    return js_value_null();
-}
-
-void js_value_obj_field_set(struct js_context_t* context, struct js_value_obj_t* self, struct js_node_id_t* name, struct js_value_t* value) {
-    struct js_value_obj_entry_t* entry = self->field;
-    struct js_value_obj_entry_t* prev = 0;
-    while (entry) {
-        if (entry->hash == name->hash && entry->length == name->length && !strcmp(entry->name, name->word)) {
-            if (entry != self->field) {
-                prev->next = entry->next;
-                entry->next = self->field;
-                self->field = entry;
-            }
-            entry->value = value;
-            return;
-        }
-        prev = entry;
-        entry = entry->next;
-    }
-    entry = flow_memory_alloc_typed(context->memory, struct js_value_obj_entry_t);
-    entry->name = strdup(name->word);
-    entry->length = name->length;
-    entry->hash = name->hash;
-    entry->value = value;
-    entry->next = self->field;
-    self->field = entry;
 }
 
 js_bool js_value_is_equal(struct js_context_t* context, struct js_value_t* left, struct js_value_t* right) {
