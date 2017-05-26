@@ -15,11 +15,11 @@ static void test_js_node_exec(char* code, char* expected) {
         js_node_error_print(js_node_error_revert(js_node_error_type(node)));
         assert(0);
     } else {
-        js_nodes_head(node);
-        js_nodes_body(node);
+        js_node_head(node);
+        js_node_body(node);
         struct js_context_t* context = js_context_new(memory);
         js_value_obj_new(context);
-        js_nodes_exec_typed(node, context);
+        js_node_exec_typed(node, context);
         if (!js_context_empty(context)) {
             js_context_peek_def(context, value);
             const char* chars = js_value_str_ansi((struct js_value_t*) value);

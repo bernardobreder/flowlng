@@ -156,11 +156,11 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
                 if (error) {
                     js_node_error_print(js_node_error_revert(error));
                 } else {
-                    js_nodes_head_typed(node);
-                    js_nodes_body_typed(node);
+                    js_node_head_typed(node);
+                    js_node_body_typed(node);
                     struct js_context_t* context = js_context_new(memory);
                     js_value_obj_new(context);
-                    js_nodes_exec_typed(node, context);
+                    js_node_exec_typed(node, context);
                     if (!js_context_empty(context)) {
                         js_context_pop_def(context, value);
                         printf("%s\n", js_value_str_ansi((struct js_value_t*) value));
