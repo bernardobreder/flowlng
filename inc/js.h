@@ -101,7 +101,7 @@
 #define JS_VALUE_FUNC 7
 #define JS_VALUE_COBJ 8
 
-typedef unsigned char js_bool;
+typedef uint8 js_bool;
 typedef double js_num;
 typedef long js_int;
 typedef size_t js_size;
@@ -122,6 +122,15 @@ struct js_token_t {
 struct js_parser_t {
     struct js_token_t* tokens;
     struct js_token_t* token;
+};
+
+struct js_compiler_t {
+    struct js_compiler_error_t* error;
+};
+
+struct js_compiler_error_t {
+    struct js_compiler_error_t* next;
+    char* message;
 };
 
 struct js_context_t {
@@ -564,6 +573,15 @@ struct js_node_stmtexp_t {
 #define js_str_hash_prime 13
 #define js_num_precision 0.0000001
 
+struct js_compiler_error_t* js_compiler_error_new(struct flow_memory_t* memory, char* message);
+void js_compiler_error_free(struct js_compiler_t* self);
+
+struct js_compiler_t* js_compiler_new(struct flow_memory_t* memory);
+void js_compiler_free(struct js_compiler_t* self);
+js_bool js_compiler_error_empty(struct js_compiler_t* self);
+void js_compiler_error_push(struct js_compiler_t* self, struct js_compiler_error_t* error);
+struct js_compiler_error_t* js_compiler_error_pop(struct js_compiler_t* self);
+
 void js_token_free(struct js_token_t* self);
 
 void js_tokens_free(struct js_token_t* self);
@@ -576,7 +594,7 @@ struct js_node_t* js_parser(struct js_parser_t* self, struct js_token_t* tokens)
 
 struct js_context_t* js_context_new(struct flow_memory_t* memory);
 void js_context_free(struct js_context_t* self);
-uint8 js_context_empty(struct js_context_t* self);
+js_bool js_context_empty(struct js_context_t* self);
 void js_context_push(struct js_context_t* self, struct js_value_t* value);
 struct js_value_t* js_context_pop(struct js_context_t* self);
 struct js_value_t* js_context_peek_index(struct js_context_t* self, js_size index);

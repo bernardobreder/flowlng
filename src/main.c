@@ -162,9 +162,13 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
                     js_value_obj_new(context);
                     js_node_exec_typed(node, context);
                     if (!js_context_empty(context)) {
-                        js_context_pop_def(context, value);
-                        printf("%s\n", js_value_str_ansi((struct js_value_t*) value));
-                        js_value_free_typed(value);
+                        js_context_peek_def(context, value);
+                        const char* chars = js_value_str_ansi((struct js_value_t*) value);
+                        printf("%s\n", chars);
+                        js_context_pop(context);
+                    }
+                    while (!js_context_empty(context)) {
+                        js_context_pop(context);
                     }
                     js_context_free(context);
                     js_node_free(node);

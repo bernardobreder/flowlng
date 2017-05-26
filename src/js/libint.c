@@ -41,14 +41,14 @@ void js_value_int_sum(struct js_context_t* context) {
         js_value_to_str_def(str_right, right);
         js_value_str_len_def(str_len_left, left);
         js_value_str_len_def(str_len_right, right);
-        js_context_pop(context);
-        js_context_pop(context);
         size_t length = str_len_left + str_len_right;
         js_char buffer[length + 1];
         strncpy(buffer, str_left, str_len_left);
         strncpy(buffer + str_len_left, str_right, str_len_right);
         buffer[length] = 0;
         js_hash hash = js_value_str_hash_concat(left, right);
+        js_context_pop(context);
+        js_context_pop(context);
         js_value_str_new(context, buffer, length, hash);
     } else {
         js_context_pop(context);

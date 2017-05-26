@@ -14,7 +14,7 @@ void js_context_free(struct js_context_t* self) {
     free(self);
 }
 
-uint8 js_context_empty(struct js_context_t* self) {
+js_bool js_context_empty(struct js_context_t* self) {
     return self->value == 0;
 }
 

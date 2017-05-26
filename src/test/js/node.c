@@ -35,8 +35,8 @@ static void test_js_node_exec(char* code, char* expected) {
             printf("%s\n%zu objects alive\n\n", code, memory->count);
         }
         js_context_free(context);
-        flow_memory_free(memory);
         js_node_free_typed(node);
+        flow_memory_free(memory);
     }
 }
 

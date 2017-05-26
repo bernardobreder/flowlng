@@ -300,28 +300,30 @@ struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) 
         return js_parser_error("expression multiplicative:", exp_token, node);
     }
     
-    if (js_parser_type('*')) {
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_multiplicative);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression multiplicative: <expression unary> * '<expression multiplicative>' expected", token, value);
+    while (js_parser_type('*') || js_parser_type('/')) {
+        if (js_parser_type('*')) {
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_unary);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression multiplicative: <expression unary> * '<expression unary>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_mul_new(node, value);
+        } else if (js_parser_type('/')) {
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_unary);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression multiplicative: <expression unary> * '<expression unary>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_div_new(node, value);
         }
-        
-        node = (struct js_node_t*) js_node_mul_new(node, value);
-    } else if (js_parser_type('/')) {
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_multiplicative);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression multiplicative: <expression unary> * '<expression multiplicative>' expected", token, value);
-        }
-        
-        node = (struct js_node_t*) js_node_div_new(node, value);
     }
     
     return node;
@@ -334,28 +336,30 @@ struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
         return js_parser_error("expression additive:", exp_token, node);
     }
     
-    if (js_parser_type('+')) {
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_additive);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression additive: <expression multiplicative> + '<expression additive>' expected", token, value);
+    while (js_parser_type('+') || js_parser_type('-')) {
+        if (js_parser_type('+')) {
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_multiplicative);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression additive: <expression multiplicative> + '<expression multiplicative>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_sum_new(node, value);
+        } else if (js_parser_type('-')) {
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_multiplicative);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression additive: <expression multiplicative> - '<expression multiplicative>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_sub_new(node, value);
         }
-        
-        node = (struct js_node_t*) js_node_sum_new(node, value);
-    } else if (js_parser_type('-')) {
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_additive);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression additive: <expression multiplicative> - '<expression additive>' expected", token, value);
-        }
-        
-        node = (struct js_node_t*) js_node_sub_new(node, value);
     }
     
     return node;
@@ -368,30 +372,32 @@ struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
         return js_parser_error("expression shift:", exp_token, node);
     }
     
-    if (js_parser_type('>') && js_parser_next_type('>')) {
-        js_parser_next();
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_shift);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression shift: <expression additive> >> '<expression shift>' expected", token, value);
+    while ((js_parser_type('>') && js_parser_next_type('>')) || (js_parser_type('<') && js_parser_next_type('<'))) {
+        if (js_parser_type('>') && js_parser_next_type('>')) {
+            js_parser_next();
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_additive);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression shift: <expression additive> >> '<expression additive>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_shift_right_new(node, value);
+        } else if (js_parser_type('<') && js_parser_next_type('<')) {
+            js_parser_next();
+            js_parser_next();
+            
+            js_node_def_token(token);
+            js_parser_func_def(value, js_parser_expression_additive);
+            if (js_node_error_is(value)) {
+                js_node_free(node);
+                return js_parser_error("expression shift: <expression additive> << '<expression additive>' expected", token, value);
+            }
+            
+            node = (struct js_node_t*) js_node_shift_left_new(node, value);
         }
-        
-        node = (struct js_node_t*) js_node_shift_right_new(node, value);
-    } else if (js_parser_type('<') && js_parser_next_type('<')) {
-        js_parser_next();
-        js_parser_next();
-        
-        js_node_def_token(token);
-        js_parser_func_def(value, js_parser_expression_shift);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression shift: <expression additive> << '<expression shift>' expected", token, value);
-        }
-        
-        node = (struct js_node_t*) js_node_shift_left_new(node, value);
     }
     
     return node;
