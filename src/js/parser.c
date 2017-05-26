@@ -10,7 +10,17 @@
 #define js_node_def(HEAD, TAIL) struct js_node_t *HEAD = 0, *TAIL = 0
 #define js_node_def_token(NAME) struct js_token_t* NAME = self->token;
 #define js_node_def_end() if (!head) { head = js_parser_empty_new(); }
-#define js_node_add(HEAD, TAIL, NODE) { if (TAIL) { TAIL->next = (struct js_node_t*) NODE; } else { HEAD = (struct js_node_t*) NODE; } } TAIL = (struct js_node_t*) NODE;
+#define js_node_add(HEAD, TAIL, NODE) \
+    if (TAIL) { \
+        TAIL->next = (struct js_node_t*) NODE; \
+    } else { \
+        HEAD = (struct js_node_t*) NODE; \
+    } \
+    TAIL = (struct js_node_t*) NODE; \
+    while (TAIL->next) { \
+        TAIL = TAIL->next; \
+    } \
+
 #define js_parser_word() self->token->word
 #define js_parser_word_length() strlen(self->token->word)
 #define js_parser_word_hash() js_hash_perform(self->token->word, js_parser_word_length())
@@ -69,9 +79,24 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
         
         return expression;
     } else if (js_parser_type(JS_TOKEN_ID)) {
-        js_parser_id_def(node);
+        js_parser_id_def(id);
         js_parser_next();
-        return (struct js_node_t*) node;
+        
+        if (js_parser_type('=') && js_parser_next_type_not('=')) {
+            js_parser_next();
+            
+            js_node_def_token(value_token);
+            js_parser_exp_def(value);
+            if (js_node_error_is(value)) {
+                js_node_id_free(id);
+                return js_parser_error("expression primitive: <id> = '<expression>' expected", value_token, value);
+            }
+            
+            struct js_node_t* this = (struct js_node_t*) js_node_this_new();
+            return (struct js_node_t*) js_node_assignment_new(this, id, value);
+        } else {
+            return (struct js_node_t*) id;
+        }
     } else if (js_parser_type(JS_TOKEN_TRUE)) {
         struct js_node_t* node = (struct js_node_t*) js_node_true_new();
         js_parser_next();
@@ -608,32 +633,9 @@ struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
     return node;
 }
 
-struct js_node_t* js_parser_expression_assignment(struct js_parser_t* self) {
-    js_node_def_token(exp_token);
-    js_parser_func_def(node, js_parser_expression_conditional);
-    if (js_node_error_is(node)) {
-        return js_parser_error("expression assignment:", exp_token, node);
-    }
-    
-    if (js_parser_type('=') && js_parser_next_type_not('=')) {
-        js_parser_next();
-        
-        js_node_def_token(value_token);
-        js_parser_func_def(value, js_parser_expression_assignment);
-        if (js_node_error_is(value)) {
-            js_node_free(node);
-            return js_parser_error("expression assignment: <expression conditional> = '<expression assignment>' expected", value_token, value);
-        }
-        
-        node = (struct js_node_t*) js_node_assignment_new(node, value);
-    }
-    
-    return node;
-}
-
 struct js_node_t* js_parser_expression(struct js_parser_t* self) {
     js_node_def_token(exp_token);
-    js_parser_func_def(node, js_parser_expression_assignment);
+    js_parser_func_def(node, js_parser_expression_conditional);
     if (js_node_error_is(node)) {
         return js_parser_error("expression:", exp_token, node);
     }

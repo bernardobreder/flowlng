@@ -72,6 +72,7 @@ void js_node_head(struct js_node_t* self) {
         case JS_NODE_WHILE: return js_node_while_head((struct js_node_while_t*) self);
         case JS_NODE_RETURN: return js_node_return_head((struct js_node_return_t*) self);
         case JS_NODE_STMT_EXP: return js_node_stmtexp_head((struct js_node_stmtexp_t*) self);
+        case JS_NODE_VAR_ITEM: return js_node_var_item_head((struct js_node_var_item_t*) self);
         case JS_NODE_EMPTY: return js_node_empty_head((struct js_node_empty_t*) self);
         case JS_NODE_BREAK: return js_node_break_head((struct js_node_break_t*) self);
         case JS_NODE_CONTINUE: return js_node_continue_head((struct js_node_continue_t*) self);
@@ -126,6 +127,7 @@ void js_node_body(struct js_node_t* self) {
         case JS_NODE_WHILE: return js_node_while_body((struct js_node_while_t*) self);
         case JS_NODE_RETURN: return js_node_return_body((struct js_node_return_t*) self);
         case JS_NODE_STMT_EXP: return js_node_stmtexp_body((struct js_node_stmtexp_t*) self);
+        case JS_NODE_VAR_ITEM: return js_node_var_item_body((struct js_node_var_item_t*) self);
         case JS_NODE_EMPTY: return js_node_empty_body((struct js_node_empty_t*) self);
         case JS_NODE_BREAK: return js_node_break_body((struct js_node_break_t*) self);
         case JS_NODE_CONTINUE: return js_node_continue_body((struct js_node_continue_t*) self);
@@ -179,6 +181,7 @@ void js_node_exec(struct js_node_t* self, struct js_context_t* context) {
         case JS_NODE_IF: return js_node_if_exec((struct js_node_if_t*) self, context);
         case JS_NODE_WHILE: return js_node_while_exec((struct js_node_while_t*) self, context);
         case JS_NODE_STMT_EXP: return js_node_stmtexp_exec((struct js_node_stmtexp_t*) self, context);
+        case JS_NODE_VAR_ITEM: return js_node_var_item_exec((struct js_node_var_item_t*) self, context);
         case JS_NODE_RETURN: return js_node_return_exec((struct js_node_return_t*) self, context);
         case JS_NODE_EMPTY: return js_node_empty_exec((struct js_node_empty_t*) self, context);
         case JS_NODE_BREAK: return js_node_break_exec((struct js_node_break_t*) self, context);
@@ -246,7 +249,6 @@ void js_nodes_exec(struct js_node_t* self, struct js_context_t* context) {
         node = node->next;
     }
 }
-
 
 void js_node_compile(struct js_node_t* self) {
     js_nodes_head(self);
@@ -366,12 +368,18 @@ void js_node_function_body(struct js_node_function_t* self) {
 }
 
 void js_node_function_exec(struct js_node_function_t* self, struct js_context_t* context) {
-    js_value_func_def_new(func, context, self);
-    js_context_peek_def(context, value);
-    if (js_value_is_obj(value)) {
-        js_value_obj_def(obj, value);
-        js_value_obj_set(context, obj, self->name, func);
+    js_value_func_new(context, self);
+    js_context_peek_func_def(context, func);
+    js_value_retain(func);
+    js_context_pop(context);
+    
+    if (js_context_peek_is_obj(context)) {
+        js_context_peek_def(context, this_value);
+        js_value_obj_def(this_obj, this_value);
+        js_value_obj_set(context, this_obj, self->name, js_value_cast(func));
     }
+    
+    js_value_release(func);
 }
 
 struct js_node_param_t* js_node_param_new(struct js_node_id_t* name) {
@@ -466,6 +474,25 @@ void js_node_var_item_free(struct js_node_var_item_t* self) {
     js_node_free_self(self);
 }
 
+void js_node_var_item_head(struct js_node_var_item_t* self) {
+    js_node_head_typed(self->name);
+    js_node_head_typed(self->value);
+}
+
+void js_node_var_item_body(struct js_node_var_item_t* self) {
+    js_node_body_typed(self->name);
+    js_node_body_typed(self->value);
+}
+
+void js_node_var_item_exec(struct js_node_var_item_t* self, struct js_context_t* context) {
+    if (js_context_peek_is_obj(context)) {
+        js_context_peek_obj_def(context, obj);
+        js_value_exec_def(value, self->value);
+        js_value_obj_set(context, obj, self->name, value);
+        js_context_pop(context);
+    }
+}
+
 struct js_node_empty_t* js_node_empty_new() {
     struct js_node_empty_t* self = (struct js_node_empty_t*) malloc(sizeof(struct js_node_empty_t));
     self->type = JS_NODE_EMPTY;
@@ -549,8 +576,7 @@ void js_node_stmtexp_body(struct js_node_stmtexp_t* self) {
 
 void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* context) {
     js_nodes_exec_typed(self->expression, context);
-    js_context_pop_def(context, value);
-    flow_memory_item_free(value);
+    js_context_pop(context);
 }
 
 struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement) {
@@ -584,8 +610,10 @@ void js_node_if_body(struct js_node_if_t* self) {
 
 void js_node_if_exec(struct js_node_if_t* self, struct js_context_t* context) {
     js_nodes_exec_typed(self->expression, context);
-    js_context_pop_def(context, expression);
-    if (js_value_is_bool(expression) && js_value_bool_value(expression)) {
+    js_context_peek_def(context, expression);
+    js_value_bool_def(is_true, expression);
+    js_context_pop(context);
+    if (is_true) {
         js_nodes_exec_typed(self->statement, context);
     } else {
         js_nodes_exec_typed(self->else_statement, context);
@@ -619,11 +647,11 @@ void js_node_while_body(struct js_node_while_t* self) {
 
 void js_node_while_exec(struct js_node_while_t* self, struct js_context_t* context) {
     js_nodes_exec_typed(self->expression, context);
-    js_context_pop_def(context, expression);
-    while (js_value_is_bool(expression) && js_value_bool_value(expression)) {
+    js_context_peek_def(context, expression);
+    js_value_bool_def(is_true, expression);
+    js_context_pop(context);
+    while (is_true) {
         js_nodes_exec_typed(self->statement, context);
-        js_nodes_exec_typed(self->expression, context);
-        expression = js_context_pop(context);
     }
 }
 
@@ -674,9 +702,12 @@ void js_node_id_body(struct js_node_id_t* self) {
 }
 
 void js_node_id_exec(struct js_node_id_t* self, struct js_context_t* context) {
-    js_context_peek_obj_or_push_null(context, obj);
-    js_value_def(value, js_value_obj_get(obj, self));
-    js_context_push_typed(context, value);
+    if (js_context_peek_is_obj(context)) {
+        js_context_peek_obj_def(context, obj);
+        js_value_obj_get(context, obj, self);
+    } else {
+        js_value_null_new(context);
+    }
 }
 
 struct js_node_string_t* js_node_string_new(char* value, size_t length) {
@@ -701,7 +732,7 @@ void js_node_string_body(struct js_node_string_t* self) {
 }
 
 void js_node_string_exec(struct js_node_string_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_str_new(context, self->value, self->length, self->hash));
+    js_value_str_new(context, self->value, self->length, self->hash);
 }
 
 struct js_node_num_t* js_node_num_new(double value) {
@@ -723,7 +754,7 @@ void js_node_num_body(struct js_node_num_t* self) {
 }
 
 void js_node_num_exec(struct js_node_num_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_num_new(context, self->value));
+    js_value_num_new(context, self->value);
 }
 
 struct js_node_int_t* js_node_int_new(int value) {
@@ -745,7 +776,7 @@ void js_node_int_body(struct js_node_int_t* self) {
 }
 
 void js_node_int_exec(struct js_node_int_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_int_new(context, self->value));
+    js_value_int_new(context, self->value);
 }
 
 struct js_node_true_t* js_node_true_new() {
@@ -766,7 +797,7 @@ void js_node_true_body(struct js_node_true_t* self) {
 }
 
 void js_node_true_exec(struct js_node_true_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_true());
+    js_value_true_new(context);
 }
 
 struct js_node_false_t* js_node_false_new() {
@@ -787,7 +818,7 @@ void js_node_false_body(struct js_node_false_t* self) {
 }
 
 void js_node_false_exec(struct js_node_false_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_false());
+    js_value_false_new(context);
 }
 
 struct js_node_null_t* js_node_null_new() {
@@ -808,7 +839,7 @@ void js_node_null_body(struct js_node_null_t* self) {
 }
 
 void js_node_null_exec(struct js_node_null_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_null());
+    js_value_null_new(context);
 }
 
 struct js_node_this_t* js_node_this_new() {
@@ -829,7 +860,8 @@ void js_node_this_body(struct js_node_this_t* self) {
 }
 
 void js_node_this_exec(struct js_node_this_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_null());
+    js_context_peek_def(context, this);
+    js_context_push_typed(context, this);
 }
 
 struct js_node_super_t* js_node_super_new() {
@@ -850,20 +882,21 @@ void js_node_super_body(struct js_node_super_t* self) {
 }
 
 void js_node_super_exec(struct js_node_super_t* self, struct js_context_t* context) {
-    js_context_push_typed(context, js_value_null());
 }
 
-struct js_node_assignment_t* js_node_assignment_new(struct js_node_t* node, struct js_node_t* value) {
+struct js_node_assignment_t* js_node_assignment_new(struct js_node_t* node, struct js_node_id_t* name, struct js_node_t* value) {
     struct js_node_assignment_t* self = (struct js_node_assignment_t*) malloc(sizeof(struct js_node_assignment_t));
     self->type = JS_NODE_ASSIGNMENT;
     self->next = 0;
     self->node = node;
+    self->name = name;
     self->value = value;
     return self;
 }
 
 void js_node_assignment_free(struct js_node_assignment_t* self) {
     js_node_free_typed(self->node);
+    js_node_free_typed(self->name);
     js_node_free_typed(self->value);
     js_node_free_self(self);
 }
@@ -879,7 +912,13 @@ void js_node_assignment_body(struct js_node_assignment_t* self) {
 }
 
 void js_node_assignment_exec(struct js_node_assignment_t* self, struct js_context_t* context) {
-    js_nodes_exec_typed(self->value, context);
+    if (js_context_peek_is_obj(context)) {
+        js_context_peek_obj_def(context, obj);
+        js_value_exec_def(value, self->value);
+        js_value_obj_set(context, obj, self->name, value);
+    } else {
+        js_node_exec(self->value, context);
+    }
 }
 
 struct js_node_ternary_t* js_node_ternary_new(struct js_node_t* node, struct js_node_t* true_value, struct js_node_t* false_value) {
@@ -914,11 +953,11 @@ void js_node_ternary_body(struct js_node_ternary_t* self) {
 void js_node_ternary_exec(struct js_node_ternary_t* self, struct js_context_t* context) {
     js_value_exec_def(value, self->node);
     js_value_bool_def(is_true, value);
-    js_value_release(value);
+    js_context_pop(context);
     if (is_true) {
-        js_nodes_exec_typed(self->true_value, context);
+        js_node_exec(self->true_value, context);
     } else {
-        js_nodes_exec_typed(self->false_value, context);
+        js_node_exec(self->false_value, context);
     }
 }
 
@@ -950,15 +989,17 @@ void js_node_or_body(struct js_node_or_t* self) {
 void js_node_or_exec(struct js_node_or_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_bool_def(is_left_true, left);
+    js_context_pop(context);
     if (is_left_true) {
-        js_context_push_typed(context, js_value_true());
+        js_value_true_new(context);
     } else {
         js_value_exec_def(right, self->value);
         js_value_bool_def(is_right_true, right);
+        js_context_pop(context);
         if (is_right_true) {
-            js_context_push_typed(context, js_value_true());
+            js_value_true_new(context);
         } else {
-            js_context_push_typed(context, js_value_false());
+            js_value_false_new(context);
         }
     }
 }
@@ -991,15 +1032,17 @@ void js_node_and_body(struct js_node_and_t* self) {
 void js_node_and_exec(struct js_node_and_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_bool_def(is_left_true, left);
+    js_context_pop(context);
     if (!is_left_true) {
-        js_context_push_typed(context, js_value_false());
+        js_value_false_new(context);
     } else {
         js_value_exec_def(right, self->value);
         js_value_bool_def(is_right_true, right);
+        js_context_pop(context);
         if (!is_right_true) {
-            js_context_push_typed(context, js_value_false());
+            js_value_false_new(context);
         } else {
-            js_context_push_typed(context, js_value_true());
+            js_value_true_new(context);
         }
     }
 }
@@ -1033,18 +1076,16 @@ void js_node_bitwise_or_exec(struct js_node_bitwise_or_t* self, struct js_contex
     js_value_exec_def(left, self->node);
     if (js_value_is_int(left)) {
         js_value_int_def(intLeft, left);
+        js_context_pop(context);
         js_value_exec_def(right, self->value);
         if (js_value_is_int(right)) {
             js_value_int_def(intRight, left);
-            js_value_release(left);
-            js_value_release(right);
-            js_context_push_typed(context, js_value_int_new(context, intLeft | intRight));
-        } else {
-            js_value_release(right);
-            js_context_push_typed(context, left);
+            js_context_pop(context);
+            js_value_int_new(context, intLeft | intRight);
         }
     } else {
-        js_context_push_typed(context, left);
+        js_context_pop(context);
+        js_context_pop(context);
     }
 }
 
@@ -1077,17 +1118,16 @@ void js_node_bitwise_xor_exec(struct js_node_bitwise_xor_t* self, struct js_cont
     js_value_exec_def(left, self->node);
     if (js_value_is_int(left)) {
         js_value_int_def(intLeft, left);
+        js_context_pop(context);
         js_value_exec_def(right, self->value);
         if (js_value_is_int(right)) {
             js_value_int_def(intRight, left);
-            js_value_release(left);
-            js_value_release(right);
-            js_context_push_typed(context, js_value_int_new(context, intLeft ^ intRight));
-        } else {
-            js_value_release(right);
-            js_context_push_typed(context, left);
+            js_context_pop(context);
+            js_value_int_new(context, intLeft ^ intRight);
         }
     } else {
+        js_context_pop(context);
+        js_context_pop(context);
         js_context_push_typed(context, left);
     }
 }
@@ -1121,17 +1161,16 @@ void js_node_bitwise_and_exec(struct js_node_bitwise_and_t* self, struct js_cont
     js_value_exec_def(left, self->node);
     if (js_value_is_int(left)) {
         js_value_int_def(intLeft, left);
+        js_context_pop(context);
         js_value_exec_def(right, self->value);
         if (js_value_is_int(right)) {
             js_value_int_def(intRight, left);
-            js_value_release(left);
-            js_value_release(right);
-            js_context_push_typed(context, js_value_int_new(context, intLeft & intRight));
-        } else {
-            js_value_release(right);
-            js_context_push_typed(context, left);
+            js_context_pop(context);
+            js_value_int_new(context, intLeft & intRight);
         }
     } else {
+        js_context_pop(context);
+        js_context_pop(context);
         js_context_push_typed(context, left);
     }
 }
@@ -1164,10 +1203,11 @@ void js_node_equal_body(struct js_node_equal_t* self) {
 void js_node_equal_exec(struct js_node_equal_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(js_value_is_equal(context, left, right)));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_equal(context, left, right);
+    js_context_pop(context);
+    js_context_pop(context);
+    if (is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_not_equal_t* js_node_not_equal_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1198,10 +1238,11 @@ void js_node_not_equal_body(struct js_node_not_equal_t* self) {
 void js_node_not_equal_exec(struct js_node_not_equal_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(!js_value_is_equal(context, left, right)));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_equal(context, left, right);
+    js_context_pop(context);
+    js_context_pop(context);
+    if (!is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_lower_equal_t* js_node_lower_equal_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1232,10 +1273,11 @@ void js_node_lower_equal_body(struct js_node_lower_equal_t* self) {
 void js_node_lower_equal_exec(struct js_node_lower_equal_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(js_value_is_compare(context, left, right) <= 0));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_compare(context, left, right) <= 0;
+    js_context_pop(context);
+    js_context_pop(context);
+    if (is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_greater_equal_t* js_node_greater_equal_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1266,10 +1308,11 @@ void js_node_greater_equal_body(struct js_node_greater_equal_t* self) {
 void js_node_greater_equal_exec(struct js_node_greater_equal_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(js_value_is_compare(context, left, right) >= 0));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_compare(context, left, right) >= 0;
+    js_context_pop(context);
+    js_context_pop(context);
+    if (is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_lower_than_t* js_node_lower_than_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1300,10 +1343,11 @@ void js_node_lower_than_body(struct js_node_lower_than_t* self) {
 void js_node_lower_than_exec(struct js_node_lower_than_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(js_value_is_compare(context, left, right) < 0));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_compare(context, left, right) < 0;
+    js_context_pop(context);
+    js_context_pop(context);
+    if (is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_greater_than_t* js_node_greater_than_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1334,10 +1378,11 @@ void js_node_greater_than_body(struct js_node_greater_than_t* self) {
 void js_node_greater_than_exec(struct js_node_greater_than_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
     js_value_exec_def(right, self->value);
-    js_value_def(value, js_value_bool(js_value_is_compare(context, left, right) > 0));
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push_typed(context, value);
+    js_bool is_true = js_value_is_compare(context, left, right) > 0;
+    js_context_pop(context);
+    js_context_pop(context);
+    if (is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_shift_left_t* js_node_shift_left_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1371,13 +1416,11 @@ void js_node_shift_left_exec(struct js_node_shift_left_t* self, struct js_contex
     if (js_value_is_int(left) && js_value_is_int(left)) {
         js_value_int_def(int_left, left);
         js_value_int_def(int_right, right);
-        js_value_int_new_def(context, value, int_left << int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_int_new(context, int_left << int_right);
     } else {
-        js_value_release(right);
-        js_context_push_typed(context, left);
+        js_context_pop(context);
     }
 }
 
@@ -1412,13 +1455,11 @@ void js_node_shift_right_exec(struct js_node_shift_right_t* self, struct js_cont
     if (js_value_is_int(left) && js_value_is_int(left)) {
         js_value_int_def(int_left, left);
         js_value_int_def(int_right, right);
-        js_value_int_new_def(context, value, int_left >> int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_int_new(context, int_left >> int_right);
     } else {
-        js_value_release(right);
-        js_context_push_typed(context, left);
+        js_context_pop(context);
     }
 }
 
@@ -1449,9 +1490,15 @@ void js_node_sum_body(struct js_node_sum_t* self) {
 
 void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) {
     js_value_exec_def(left, self->node);
+    js_value_retain(left);
+    js_context_pop(context);
     js_value_exec_def(right, self->value);
-    js_context_push_typed(context, right);
-    js_context_push_typed(context, left);
+    js_value_retain(right);
+    js_context_pop(context);
+    js_context_push(context, right);
+    js_value_release(right);
+    js_context_push(context, left);
+    js_value_release(left);
     if (js_value_is_int(left)) {
         js_value_int_sum(context);
     } else if (js_value_is_num(left)) {
@@ -1459,7 +1506,7 @@ void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) 
     } else if (js_value_is_str(left)) {
         js_value_str_concat(context);
     } else {
-        js_value_release(right);
+        js_context_pop(context);
         js_context_push_typed(context, left);
     }
 }
@@ -1495,20 +1542,17 @@ void js_node_sub_exec(struct js_node_sub_t* self, struct js_context_t* context) 
     if (js_value_is_int(left) && js_value_is_int(left)) {
         js_value_int_def(int_left, left);
         js_value_int_def(int_right, right);
-        js_value_int_new_def(context, value, int_left - int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_int_new(context, int_left - int_right);
     } else if (js_value_is_numint(left) && js_value_is_numint(left)) {
         js_value_numint_def(int_left, left);
         js_value_numint_def(int_right, right);
-        js_value_num_new_def(context, value, int_left - int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_num_new(context, int_left - int_right);
     } else {
-        js_value_release(right);
-        js_context_push_typed(context, left);
+        js_context_pop(context);
     }
 }
 
@@ -1543,20 +1587,17 @@ void js_node_mul_exec(struct js_node_mul_t* self, struct js_context_t* context) 
     if (js_value_is_int(left) && js_value_is_int(left)) {
         js_value_int_def(int_left, left);
         js_value_int_def(int_right, right);
-        js_value_int_new_def(context, value, int_left * int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_int_new(context, int_left * int_right);
     } else if (js_value_is_numint(left) && js_value_is_numint(left)) {
         js_value_numint_def(int_left, left);
         js_value_numint_def(int_right, right);
-        js_value_num_new_def(context, value, int_left * int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_num_new(context, int_left * int_right);
     } else {
-        js_value_release(right);
-        js_context_push_typed(context, left);
+        js_context_pop(context);
     }
 }
 
@@ -1591,13 +1632,11 @@ void js_node_div_exec(struct js_node_div_t* self, struct js_context_t* context) 
     if (js_value_is_numint(left) && js_value_is_numint(left)) {
         js_value_numint_def(int_left, left);
         js_value_numint_def(int_right, right);
-        js_value_num_new_def(context, value, int_left / int_right)
-        js_value_release(left);
-        js_value_release(right);
-        js_context_push_typed(context, value);
+        js_context_pop(context);
+        js_context_pop(context);
+        js_value_num_new(context, int_left / int_right);
     } else {
-        js_value_release(right);
-        js_context_push_typed(context, left);
+        js_context_pop(context);
     }
 }
 
@@ -1624,11 +1663,10 @@ void js_node_not_body(struct js_node_not_t* self) {
 
 void js_node_not_exec(struct js_node_not_t* self, struct js_context_t* context) {
     js_value_exec_def(value, self->node);
-    if (js_value_is_bool(value)) {
-        js_value_bool_def(bool_value, value);
-        js_value_release(value);
-        js_context_push_typed(context, js_value_bool(!bool_value));
-    }
+    js_bool is_true = js_value_is_bool_true(value);
+    js_context_pop(context);
+    if (!is_true) js_value_true_new(context);
+    else js_value_false_new(context);
 }
 
 struct js_node_neg_t* js_node_neg_new(struct js_node_t* node) {
@@ -1656,14 +1694,12 @@ void js_node_neg_exec(struct js_node_neg_t* self, struct js_context_t* context) 
     js_value_exec_def(value, self->node);
     if (js_value_is_int(value)) {
         js_value_int_def(int_value, value);
-        js_value_release(value);
-        js_value_int_new_def(context, result, -int_value);
-        js_context_push_typed(context, result);
+        js_context_pop(context);
+        js_value_int_new(context, -int_value);
     } else if (js_value_is_num(value)) {
         js_value_num_def(num_value, value);
-        js_value_release(value);
-        js_value_num_new_def(context, result, -num_value);
-        js_context_push_typed(context, result);
+        js_context_pop(context);
+        js_value_num_new(context, -num_value);
     }
 }
 
@@ -1689,7 +1725,6 @@ void js_node_pre_inc_body(struct js_node_pre_inc_t* self) {
 }
 
 void js_node_pre_inc_exec(struct js_node_pre_inc_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
 }
 
 struct js_node_pre_dec_t* js_node_pre_dec_new(struct js_node_t* node) {
@@ -1714,7 +1749,6 @@ void js_node_pre_dec_body(struct js_node_pre_dec_t* self) {
 }
 
 void js_node_pre_dec_exec(struct js_node_pre_dec_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
 }
 
 struct js_node_pos_inc_t* js_node_pos_inc_new(struct js_node_t* node) {
@@ -1739,7 +1773,6 @@ void js_node_pos_inc_body(struct js_node_pos_inc_t* self) {
 }
 
 void js_node_pos_inc_exec(struct js_node_pos_inc_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
 }
 
 struct js_node_pos_dec_t* js_node_pos_dec_new(struct js_node_t* node) {
@@ -1764,7 +1797,7 @@ void js_node_pos_dec_body(struct js_node_pos_dec_t* self) {
 }
 
 void js_node_pos_dec_exec(struct js_node_pos_dec_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
+    // TODO
 }
 
 struct js_node_get_t* js_node_get_new(struct js_node_t* node, struct js_node_id_t* value) {
@@ -1791,7 +1824,7 @@ void js_node_get_body(struct js_node_get_t* self) {
 }
 
 void js_node_get_exec(struct js_node_get_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
+    // TODO
 }
 
 struct js_node_array_t* js_node_array_new(struct js_node_t* node, struct js_node_t* value) {
@@ -1820,7 +1853,7 @@ void js_node_array_body(struct js_node_array_t* self) {
 }
 
 void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
+    // TODO
 }
 
 struct js_node_call_t* js_node_call_new(struct js_node_t* node, struct js_node_t* param) {
@@ -1849,30 +1882,54 @@ void js_node_call_body(struct js_node_call_t* self) {
 }
 
 void js_node_call_exec(struct js_node_call_t* self, struct js_context_t* context) {
-    js_value_exec_def(value, self->node);
-    if (js_value_is_func(value)) {
-        struct js_value_func_t* func = js_value_func_cast(value);
-        js_value_obj_new_def(context, param_obj);
+    js_context_peek_obj_def(context, obj);
+    js_value_exec_def(func_obj, self->node);
+    if (js_value_is_func(func_obj)) {
+        js_value_retain(func_obj);
+        js_context_pop(context);
+        
+        js_value_obj_new(context);
+        js_context_peek_obj_def(context, param_obj);
+        js_value_retain(param_obj);
+        js_context_pop(context);
+        
+        js_value_obj_new(context);
+        js_context_peek_obj_def(context, var_obj);
+        js_value_retain(var_obj);
+        js_context_pop(context);
+        
+        var_obj->parent = param_obj;
+        js_value_retain(param_obj);
+        param_obj->parent = obj;
+        js_value_retain(obj);
+        js_context_push_typed(context, var_obj);
+        
         struct js_node_t* call_param_node = self->param;
+        struct js_value_func_t* func = js_value_func_cast(func_obj);
         struct js_node_param_t* func_param_node = func->function->param;
         while (func_param_node) {
-            js_nodes_exec_typed(call_param_node, context);
-            js_context_pop_def(context, value_param);
-            js_value_obj_set(context, param_obj, func_param_node->name, value_param);
+            js_value_exec_def(param_value, call_param_node);
+            js_value_obj_set(context, param_obj, func_param_node->name, param_value);
+            js_context_pop(context);
             func_param_node = (struct js_node_param_t*) func_param_node->next;
             call_param_node = call_param_node->next;
         }
-        js_value_obj_new_def(context, var_obj);
-        var_obj->next = param_obj;
-        param_obj->next = js_value_obj_cast(context->value);
-        context->value = js_value_cast(var_obj);
+        
         js_nodes_exec_typed(func->function->statement, context);
-        struct js_value_t** queue = &context->value;
-        while (*queue != js_value_cast(var_obj)) queue = &(*queue)->next;
-        *queue = js_value_cast(param_obj->next);
-        param_obj->next = 0;
-        js_value_free_typed(var_obj);
+        
+        js_context_peek_def(context, result_value);
+        js_value_retain(result_value);
+        js_context_pop(context);
+        
+        js_context_pop(context);
+        js_context_push(context, result_value);
+        
+        js_value_release(param_obj);
+        js_value_release(var_obj);
+        js_value_release(func_obj);
+        js_value_release(result_value);
     } else {
-        js_context_push_typed(context, js_value_null());
+        js_context_pop(context);
+        js_value_null_new(context);
     }
 }

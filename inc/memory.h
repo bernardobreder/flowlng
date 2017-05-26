@@ -3,7 +3,7 @@
 #define MEMORY_T
 
 struct flow_memory_t {
-    int count;
+    size_t count;
 };
 
 struct flow_memory_item_t {

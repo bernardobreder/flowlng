@@ -111,7 +111,7 @@ int eval_func(struct flow_argument_t* arg_node) {
             }
         }
         struct js_context_t* context = js_context_new(memory);
-        js_context_push_typed(context, js_value_obj_new(context));
+        js_value_obj_new(context);
         {
             struct js_node_t* aux = node;
             while (aux) {
@@ -159,7 +159,7 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
                     js_nodes_head_typed(node);
                     js_nodes_body_typed(node);
                     struct js_context_t* context = js_context_new(memory);
-                    js_context_push_typed(context, js_value_obj_new(context));
+                    js_value_obj_new(context);
                     js_nodes_exec_typed(node, context);
                     if (!js_context_empty(context)) {
                         js_context_pop_def(context, value);

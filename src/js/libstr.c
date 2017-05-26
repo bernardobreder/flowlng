@@ -4,14 +4,15 @@
 #include <string.h>
 #include "js.h"
 
-struct js_value_t* js_value_str_new(struct js_context_t* context, char* value, size_t length, uint64 hash) {
+void js_value_str_new(struct js_context_t* context, char* value, size_t length, uint64 hash) {
     struct js_value_str_t* self = flow_memory_alloc_typed(context->memory, struct js_value_str_t);
+    self->ref_counter = 0;
     self->type = JS_VALUE_STR;
     self->next = 0;
     self->value = strdup(value);
     self->length = length;
     self->hash = hash;
-    return (struct js_value_t*) self;
+    js_context_push_typed(context, self);
 }
 
 void js_value_str_free(struct js_value_str_t* self) {
@@ -21,8 +22,8 @@ void js_value_str_free(struct js_value_str_t* self) {
 }
 
 void js_value_str_concat(struct js_context_t* context) {
-    js_context_pop_def(context, left);
-    js_context_pop_def(context, right);
+    js_context_peek_def(context, left);
+    js_context_peek_index_def(context, right, 1);
     js_value_to_str_def(str_left, left);
     js_value_to_str_def(str_right, right);
     js_value_str_len_def(str_len_left, left);
@@ -33,10 +34,9 @@ void js_value_str_concat(struct js_context_t* context) {
     strncpy(buffer + str_len_left, str_right, str_len_right);
     buffer[length] = 0;
     js_hash hash = js_value_str_hash_concat(left, right);
-    js_value_str_new_def(context, value, buffer, length, hash);
-    js_value_release(left);
-    js_value_release(right);
-    js_context_push(context, value);
+    js_context_pop(context);
+    js_context_pop(context);
+    js_value_str_new(context, buffer, length, hash);
 }
 
 const js_str js_value_str_ansi(struct js_value_t* self) {
@@ -46,7 +46,10 @@ const js_str js_value_str_ansi(struct js_value_t* self) {
         case JS_VALUE_CLASS: return "class";
         case JS_VALUE_OBJ: return "<object>";
         case JS_VALUE_BOOL: return js_value_bool_value(self) ? "true" : "false";
-        case JS_VALUE_STR: return ((struct js_value_str_t*)self)->value;
+        case JS_VALUE_STR: {
+            struct js_value_str_t* str_value = (struct js_value_str_t*) self;
+            return str_value->value;
+        }
         case JS_VALUE_INT: {
             struct js_value_int_t* int_value = (struct js_value_int_t*) self;
             if (!int_value->str_value) {

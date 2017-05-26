@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "js.h"
 
@@ -17,13 +18,21 @@ static void test_js_node_exec(char* code, char* expected) {
         js_nodes_head(node);
         js_nodes_body(node);
         struct js_context_t* context = js_context_new(memory);
-        js_context_push_typed(context, js_value_obj_new(context));
+        js_value_obj_new(context);
         js_nodes_exec_typed(node, context);
         if (!js_context_empty(context)) {
-            js_context_pop_def(context, value);
+            js_context_peek_def(context, value);
             const char* chars = js_value_str_ansi((struct js_value_t*) value);
-            assert(!strcmp(expected, chars));
-            js_value_free_typed(value);
+            if (strcmp(expected, chars)) {
+                printf("%s\nExpected: %s\nActual: %s\n\n", code, expected, chars);
+            }
+            js_context_pop(context);
+        }
+        while (!js_context_empty(context)) {
+            js_context_pop(context);
+        }
+        if (memory->count != 0) {
+            printf("%s\n%zu objects alive\n\n", code, memory->count);
         }
         js_context_free(context);
         flow_memory_free(memory);
@@ -32,26 +41,34 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
-    test_js_node_exec("return \"a\"+\"b\"", "ab");
-    test_js_node_exec("function a() do function b() do return 1 end return b() end return a()", "1");
-    test_js_node_exec("function a() do return 1 end a()", "<object>");
-    test_js_node_exec("function a() do end", "<object>");
     test_js_node_exec("class a do end", "<object>");
     test_js_node_exec("class a do var a end", "<object>");
     test_js_node_exec("class a do function a() do end end", "<object>");
     test_js_node_exec("class a do constructor() do end end", "<object>");
+    
+    test_js_node_exec("var a = 1 return a", "1");
+    test_js_node_exec("var a = 1, b = 2 return a + b", "3");
+    test_js_node_exec("var a = 1 a = 2 return a", "2");
+    
     test_js_node_exec("return 2+3", "5");
     test_js_node_exec("return \"a\"+1", "a1");
+    test_js_node_exec("return \"a\"+\"b\"", "ab");
     test_js_node_exec("return 2-3", "-1");
     test_js_node_exec("return -2+3", "1");
     test_js_node_exec("return 2*3", "6");
     test_js_node_exec("return 4/2", "2");
     test_js_node_exec("return 4/-2", "-2");
+    
+    test_js_node_exec("function a() do end", "<object>");
+    test_js_node_exec("function a() do return 1 end a()", "<object>");
     test_js_node_exec("function a() do return 1 end return a()", "1");
+    test_js_node_exec("function a() do return 1 end function b() do return a() end return b()", "1");
     test_js_node_exec("function a() do return 1 end function b() do return a()+1 end return b()", "2");
     test_js_node_exec("function a() do return 1 end function b() do return 1+a() end return b()", "2");
     test_js_node_exec("function a() do return 1 end function b() do return a()+a()+a() end return b()", "3");
 
+    test_js_node_exec("function a() do function b() do return 1 end return b() end return a()", "1");
+    
     test_js_node_exec("return 1", "1");
     test_js_node_exec("return 1.234", "1.234");
     test_js_node_exec("return true", "true");
@@ -59,13 +76,13 @@ void test_js_node() {
     test_js_node_exec("return null", "null");
     test_js_node_exec("return a", "null");
     test_js_node_exec("return \"abc\"", "abc");
-    
+
     test_js_node_exec("return a=1", "1");
 
     test_js_node_exec("return 1 ? 2 : 3", "3");
     test_js_node_exec("return false ? 2 : 3", "3");
     test_js_node_exec("return true ? 2 : 3", "2");
-    
+
     test_js_node_exec("return true or true", "true");
     test_js_node_exec("return true or false", "true");
     test_js_node_exec("return false or true", "true");
@@ -100,7 +117,7 @@ void test_js_node() {
     test_js_node_exec("return 1.1==1.2", "false");
     test_js_node_exec("return \"a\"==1.1", "false");
     test_js_node_exec("return 1.1==\"a\"", "false");
-    
+
     test_js_node_exec("return true==true", "true");
     test_js_node_exec("return true==false", "false");
     test_js_node_exec("return true==1.1", "false");
@@ -116,7 +133,7 @@ void test_js_node() {
     test_js_node_exec("return 1!=1.1", "true");
     test_js_node_exec("return \"a\"!=1", "true");
     test_js_node_exec("return 1!=\"a\"", "true");
-    
+
     test_js_node_exec("return 1<=1", "true");
     test_js_node_exec("return 1<=2", "true");
     test_js_node_exec("return 2<=1", "false");

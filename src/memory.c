@@ -3,6 +3,7 @@
 
 struct flow_memory_t* flow_memory_new() {
     struct flow_memory_t* self = (struct flow_memory_t*) malloc(sizeof(struct flow_memory_t));
+    self->count = 0;
     return self;
 }
 

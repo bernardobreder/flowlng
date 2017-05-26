@@ -10,7 +10,7 @@ void js_value_free(struct js_value_t* self) {
     switch (self->type) {
         case JS_VALUE_NULL:
         case JS_VALUE_BOOL:
-            return;
+            break;
         case JS_VALUE_INT: return js_value_int_free((struct js_value_int_t*) self);
         case JS_VALUE_NUM: return js_value_num_free((struct js_value_num_t*) self);
         case JS_VALUE_STR: return js_value_str_free((struct js_value_str_t*) self);
@@ -22,23 +22,35 @@ void js_value_free(struct js_value_t* self) {
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_null() {
-    static struct js_value_null_t value = {JS_VALUE_NULL, 0};
-    return (struct js_value_t*) &value;
+void js_value_null_new(struct js_context_t* context) {
+    struct js_value_bool_t* self = flow_memory_alloc_typed(context->memory, struct js_value_bool_t);
+    self->ref_counter = 0;
+    self->type = JS_VALUE_NULL;
+    self->next = 0;
+    js_context_push_typed(context, self);
 }
 
-struct js_value_t* js_value_true() {
-    static struct js_value_bool_t value = {JS_VALUE_BOOL, 0, 1};
-    return (struct js_value_t*) &value;
+void js_value_true_new(struct js_context_t* context) {
+    struct js_value_bool_t* self = flow_memory_alloc_typed(context->memory, struct js_value_bool_t);
+    self->ref_counter = 0;
+    self->type = JS_VALUE_BOOL;
+    self->next = 0;
+    self->value = 1;
+    js_context_push_typed(context, self);
 }
 
-struct js_value_t* js_value_false() {
-    static struct js_value_bool_t value = {JS_VALUE_BOOL, 0, 0};
-    return (struct js_value_t*) &value;
+void js_value_false_new(struct js_context_t* context) {
+    struct js_value_bool_t* self = flow_memory_alloc_typed(context->memory, struct js_value_bool_t);
+    self->ref_counter = 0;
+    self->type = JS_VALUE_BOOL;
+    self->next = 0;
+    self->value = 0;
+    js_context_push_typed(context, self);
 }
 
-struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str) {
+void js_value_class_new(struct js_context_t* context, struct js_value_str_t* class_str) {
     struct js_value_class_t* self = flow_memory_alloc_typed(context->memory, struct js_value_class_t);
+    self->ref_counter = 1;
     self->type = JS_VALUE_CLASS;
     self->next = 0;
     self->constructor = 0;
@@ -50,22 +62,21 @@ struct js_value_t* js_value_class_new(struct js_context_t* context, struct js_va
     self->clone_func = 0;
     self->equal_func = 0;
     self->class_str = class_str;
-    return (struct js_value_t*) self;
+    js_context_push_typed(context, self);
 }
 
 void js_value_class_free(struct js_value_class_t* self) {
     if (self->next) js_value_free_typed(self->next);
-    
     flow_memory_item_free(self);
 }
 
-struct js_value_t* js_value_func_new(struct js_context_t* context, struct js_node_function_t* function) {
+void js_value_func_new(struct js_context_t* context, struct js_node_function_t* function) {
     struct js_value_func_t* self = flow_memory_alloc_typed(context->memory, struct js_value_func_t);
+    self->ref_counter = 0;
     self->type = JS_VALUE_FUNC;
     self->next = 0;
     self->function = function;
-    flow_memory_retain(function);
-    return (struct js_value_t*) self;
+    js_context_push_typed(context, self);
 }
 
 void js_value_func_free(struct js_value_func_t* self) {
