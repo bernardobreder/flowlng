@@ -3,12 +3,14 @@
 #include "js.h"
 
 void test_js_parser_compile(char* code) {
+    struct flow_memory_t* memory = flow_memory_new();
     struct js_token_t* tokens = js_lexer(code);
-    struct js_parser_t* parser = js_parser_new(tokens);
+    struct js_parser_t* parser = js_parser_new(memory, tokens);
     struct js_node_t* nodes = js_parser(parser, tokens);
     js_parser_free(parser);
     js_tokens_free(tokens);
     js_node_free(nodes);
+    flow_memory_free(memory);
 }
 
 void test_js_parser() {
@@ -63,11 +65,13 @@ void test_js_parser() {
         test_js_parser_compile("function a(){while(false){}}");
     }
     {
+        struct flow_memory_t* memory = flow_memory_new();
         struct js_token_t* tokens = js_lexer("function a(a,b,c){;}");
-        struct js_parser_t* parser = js_parser_new(tokens);
+        struct js_parser_t* parser = js_parser_new(memory, tokens);
         struct js_node_t* nodes = js_parser(parser, tokens);
         js_parser_free(parser);
         js_tokens_free(tokens);
         js_node_free(nodes);
+        flow_memory_free(memory);
     }
 }

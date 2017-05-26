@@ -235,8 +235,8 @@ void js_node_exec(struct js_node_t* self, struct js_context_t* context) {
     }
 }
 
-struct js_node_error_t* js_node_error_new(char* message, char* word, size_t line, size_t column, struct js_node_error_t* next) {
-    struct js_node_error_t* self = (struct js_node_error_t*) malloc(sizeof(struct js_node_error_t));
+struct js_node_error_t* js_node_error_new(struct flow_memory_t* memory, char* message, char* word, size_t line, size_t column, struct js_node_error_t* next) {
+    struct js_node_error_t* self = flow_memory_alloc_typed(memory, struct js_node_error_t);
     self->type = JS_NODE_ERROR;
     self->next = next;
     self->message = message;
@@ -250,7 +250,7 @@ void js_node_error_free(struct js_node_error_t* self) {
     free(self->message);
     free(self->word);
     if (self->next) js_node_error_free(self->next);
-    free(self);
+    flow_memory_item_free(self);
 }
 
 struct js_node_error_t* js_nodes_error_is(struct js_node_t* self) {
@@ -286,8 +286,8 @@ void js_node_error_print(struct js_node_error_t* self) {
     printf("\n");
 }
 
-struct js_node_class_t* js_node_class_new(struct js_node_id_t* name, struct js_node_id_t* extends, struct js_node_t* constructor, struct js_node_t* field, struct js_node_t* method) {
-    struct js_node_class_t* self = (struct js_node_class_t*) malloc(sizeof(struct js_node_class_t));
+struct js_node_class_t* js_node_class_new(struct flow_memory_t* memory, struct js_node_id_t* name, struct js_node_id_t* extends, struct js_node_t* constructor, struct js_node_t* field, struct js_node_t* method) {
+    struct js_node_class_t* self = flow_memory_alloc_typed(memory, struct js_node_class_t);
     self->type = JS_NODE_CLASS;
     self->next = 0;
     self->name = name;
@@ -318,8 +318,8 @@ void js_node_class_body(struct js_node_class_t* self, struct js_compiler_t* comp
 void js_node_class_exec(struct js_node_class_t* self, struct js_context_t* context) {
 }
 
-struct js_node_function_t* js_node_function_new(struct js_node_id_t* name, struct js_node_param_t* param, struct js_node_t* statement) {
-    struct js_node_function_t* self = (struct js_node_function_t*) malloc(sizeof(struct js_node_function_t));
+struct js_node_function_t* js_node_function_new(struct flow_memory_t* memory, struct js_node_id_t* name, struct js_node_param_t* param, struct js_node_t* statement) {
+    struct js_node_function_t* self = flow_memory_alloc_typed(memory, struct js_node_function_t);
     self->type = JS_NODE_FUNCTION;
     self->next = 0;
     self->name = name;
@@ -362,8 +362,8 @@ void js_node_function_exec(struct js_node_function_t* self, struct js_context_t*
     js_value_release(func);
 }
 
-struct js_node_param_t* js_node_param_new(struct js_node_id_t* name) {
-    struct js_node_param_t* self = (struct js_node_param_t*) malloc(sizeof(struct js_node_param_t));
+struct js_node_param_t* js_node_param_new(struct flow_memory_t* memory, struct js_node_id_t* name) {
+    struct js_node_param_t* self = flow_memory_alloc_typed(memory, struct js_node_param_t);
     self->type = JS_NODE_PARAM;
     self->next = 0;
     self->name = name;
@@ -386,8 +386,8 @@ void js_node_param_body(struct js_node_param_t* self, struct js_compiler_t* comp
 void js_node_param_exec(struct js_node_param_t* self, struct js_context_t* context) {
 }
 
-struct js_node_constructor_t* js_node_constructor_new(struct js_node_t* params, struct js_node_t* statement) {
-    struct js_node_constructor_t* self = (struct js_node_constructor_t*) malloc(sizeof(struct js_node_constructor_t));
+struct js_node_constructor_t* js_node_constructor_new(struct flow_memory_t* memory, struct js_node_t* params, struct js_node_t* statement) {
+    struct js_node_constructor_t* self = flow_memory_alloc_typed(memory, struct js_node_constructor_t);
     self->type = JS_NODE_CONSTRUCTOR;
     self->next = 0;
     self->params = params;
@@ -415,8 +415,8 @@ void js_node_constructor_exec(struct js_node_constructor_t* self, struct js_cont
     
 }
 
-struct js_node_field_t* js_node_field_new(struct js_node_id_t* name) {
-    struct js_node_field_t* self = (struct js_node_field_t*) malloc(sizeof(struct js_node_field_t));
+struct js_node_field_t* js_node_field_new(struct flow_memory_t* memory, struct js_node_id_t* name) {
+    struct js_node_field_t* self = flow_memory_alloc_typed(memory, struct js_node_field_t);
     self->type = JS_NODE_FIELD;
     self->next = 0;
     self->name = name;
@@ -439,8 +439,8 @@ void js_node_field_body(struct js_node_field_t* self, struct js_compiler_t* comp
 void js_node_field_exec(struct js_node_field_t* self, struct js_context_t* context) {
 }
 
-struct js_node_var_item_t* js_node_var_item_new(struct js_node_id_t* name, struct js_node_t* value) {
-    struct js_node_var_item_t* self = (struct js_node_var_item_t*) malloc(sizeof(struct js_node_var_item_t));
+struct js_node_var_item_t* js_node_var_item_new(struct flow_memory_t* memory, struct js_node_id_t* name, struct js_node_t* value) {
+    struct js_node_var_item_t* self = flow_memory_alloc_typed(memory, struct js_node_var_item_t);
     self->type = JS_NODE_VAR_ITEM;
     self->next = 0;
     self->name = name;
@@ -473,8 +473,8 @@ void js_node_var_item_exec(struct js_node_var_item_t* self, struct js_context_t*
     }
 }
 
-struct js_node_empty_t* js_node_empty_new() {
-    struct js_node_empty_t* self = (struct js_node_empty_t*) malloc(sizeof(struct js_node_empty_t));
+struct js_node_empty_t* js_node_empty_new(struct flow_memory_t* memory) {
+    struct js_node_empty_t* self = flow_memory_alloc_typed(memory, struct js_node_empty_t);
     self->type = JS_NODE_EMPTY;
     self->next = 0;
     return self;
@@ -493,8 +493,8 @@ void js_node_empty_body(struct js_node_empty_t* self, struct js_compiler_t* comp
 void js_node_empty_exec(struct js_node_empty_t* self, struct js_context_t* context) {
 }
 
-struct js_node_break_t* js_node_break_new() {
-    struct js_node_break_t* self = (struct js_node_break_t*) malloc(sizeof(struct js_node_break_t));
+struct js_node_break_t* js_node_break_new(struct flow_memory_t* memory) {
+    struct js_node_break_t* self = flow_memory_alloc_typed(memory, struct js_node_break_t);
     self->type = JS_NODE_BREAK;
     self->next = 0;
     return self;
@@ -513,8 +513,8 @@ void js_node_break_body(struct js_node_break_t* self, struct js_compiler_t* comp
 void js_node_break_exec(struct js_node_break_t* self, struct js_context_t* context) {
 }
 
-struct js_node_continue_t* js_node_continue_new() {
-    struct js_node_continue_t* self = (struct js_node_continue_t*) malloc(sizeof(struct js_node_continue_t));
+struct js_node_continue_t* js_node_continue_new(struct flow_memory_t* memory) {
+    struct js_node_continue_t* self = flow_memory_alloc_typed(memory, struct js_node_continue_t);
     self->type = JS_NODE_CONTINUE;
     self->next = 0;
     return self;
@@ -533,8 +533,8 @@ void js_node_continue_body(struct js_node_continue_t* self, struct js_compiler_t
 void js_node_continue_exec(struct js_node_continue_t* self, struct js_context_t* context) {
 }
 
-struct js_node_stmtexp_t* js_node_stmtexp_new(struct js_node_t* expression) {
-    struct js_node_stmtexp_t* self = (struct js_node_stmtexp_t*) malloc(sizeof(struct js_node_stmtexp_t));
+struct js_node_stmtexp_t* js_node_stmtexp_new(struct flow_memory_t* memory, struct js_node_t* expression) {
+    struct js_node_stmtexp_t* self = flow_memory_alloc_typed(memory, struct js_node_stmtexp_t);
     self->type = JS_NODE_STMT_EXP;
     self->next = 0;
     self->expression = expression;
@@ -559,8 +559,8 @@ void js_node_stmtexp_exec(struct js_node_stmtexp_t* self, struct js_context_t* c
     js_context_pop(context);
 }
 
-struct js_node_if_t* js_node_if_new(struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement) {
-    struct js_node_if_t* self = (struct js_node_if_t*) malloc(sizeof(struct js_node_if_t));
+struct js_node_if_t* js_node_if_new(struct flow_memory_t* memory, struct js_node_t* expression, struct js_node_t* statement, struct js_node_t* else_statement) {
+    struct js_node_if_t* self = flow_memory_alloc_typed(memory, struct js_node_if_t);
     self->type = JS_NODE_IF;
     self->next = 0;
     self->expression = expression;
@@ -600,8 +600,8 @@ void js_node_if_exec(struct js_node_if_t* self, struct js_context_t* context) {
     }
 }
 
-struct js_node_while_t* js_node_while_new(struct js_node_t* expression, struct js_node_t* statement) {
-    struct js_node_while_t* self = (struct js_node_while_t*) malloc(sizeof(struct js_node_while_t));
+struct js_node_while_t* js_node_while_new(struct flow_memory_t* memory, struct js_node_t* expression, struct js_node_t* statement) {
+    struct js_node_while_t* self = flow_memory_alloc_typed(memory, struct js_node_while_t);
     self->type = JS_NODE_WHILE;
     self->next = 0;
     self->expression = expression;
@@ -635,8 +635,8 @@ void js_node_while_exec(struct js_node_while_t* self, struct js_context_t* conte
     }
 }
 
-struct js_node_return_t* js_node_return_new(struct js_node_t* expression) {
-    struct js_node_return_t* self = (struct js_node_return_t*) malloc(sizeof(struct js_node_return_t));
+struct js_node_return_t* js_node_return_new(struct flow_memory_t* memory, struct js_node_t* expression) {
+    struct js_node_return_t* self = flow_memory_alloc_typed(memory, struct js_node_return_t);
     self->type = JS_NODE_RETURN;
     self->next = 0;
     self->expression = expression;
@@ -660,8 +660,8 @@ void js_node_return_exec(struct js_node_return_t* self, struct js_context_t* con
     js_node_exec_typed(self->expression, context);
 }
 
-struct js_node_id_t* js_node_id_new(char* word, size_t length, js_hash hash) {
-    struct js_node_id_t* self = (struct js_node_id_t*) malloc(sizeof(struct js_node_id_t));
+struct js_node_id_t* js_node_id_new(struct flow_memory_t* memory, char* word, size_t length, js_hash hash) {
+    struct js_node_id_t* self = flow_memory_alloc_typed(memory, struct js_node_id_t);
     self->type = JS_NODE_ID;
     self->next = 0;
     self->word = word;
@@ -690,8 +690,8 @@ void js_node_id_exec(struct js_node_id_t* self, struct js_context_t* context) {
     }
 }
 
-struct js_node_string_t* js_node_string_new(char* value, size_t length) {
-    struct js_node_string_t* self = (struct js_node_string_t*) malloc(sizeof(struct js_node_string_t));
+struct js_node_string_t* js_node_string_new(struct flow_memory_t* memory, char* value, size_t length) {
+    struct js_node_string_t* self = flow_memory_alloc_typed(memory, struct js_node_string_t);
     self->type = JS_NODE_STRING;
     self->next = 0;
     self->value = value;
@@ -715,8 +715,8 @@ void js_node_string_exec(struct js_node_string_t* self, struct js_context_t* con
     js_value_str_new(context, self->value, self->length, self->hash);
 }
 
-struct js_node_num_t* js_node_num_new(double value) {
-    struct js_node_num_t* self = (struct js_node_num_t*) malloc(sizeof(struct js_node_num_t));
+struct js_node_num_t* js_node_num_new(struct flow_memory_t* memory, double value) {
+    struct js_node_num_t* self = flow_memory_alloc_typed(memory, struct js_node_num_t);
     self->type = JS_NODE_NUM;
     self->next = 0;
     self->value = value;
@@ -737,8 +737,8 @@ void js_node_num_exec(struct js_node_num_t* self, struct js_context_t* context) 
     js_value_num_new(context, self->value);
 }
 
-struct js_node_int_t* js_node_int_new(int value) {
-    struct js_node_int_t* self = (struct js_node_int_t*) malloc(sizeof(struct js_node_int_t));
+struct js_node_int_t* js_node_int_new(struct flow_memory_t* memory, int value) {
+    struct js_node_int_t* self = flow_memory_alloc_typed(memory, struct js_node_int_t);
     self->type = JS_NODE_INT;
     self->next = 0;
     self->value = value;
@@ -759,8 +759,8 @@ void js_node_int_exec(struct js_node_int_t* self, struct js_context_t* context) 
     js_value_int_new(context, self->value);
 }
 
-struct js_node_true_t* js_node_true_new() {
-    struct js_node_true_t* self = (struct js_node_true_t*) malloc(sizeof(struct js_node_true_t));
+struct js_node_true_t* js_node_true_new(struct flow_memory_t* memory) {
+    struct js_node_true_t* self = flow_memory_alloc_typed(memory, struct js_node_true_t);
     self->type = JS_NODE_TRUE;
     self->next = 0;
     return self;
@@ -780,8 +780,8 @@ void js_node_true_exec(struct js_node_true_t* self, struct js_context_t* context
     js_value_true_new(context);
 }
 
-struct js_node_false_t* js_node_false_new() {
-    struct js_node_false_t* self = (struct js_node_false_t*) malloc(sizeof(struct js_node_false_t));
+struct js_node_false_t* js_node_false_new(struct flow_memory_t* memory) {
+    struct js_node_false_t* self = flow_memory_alloc_typed(memory, struct js_node_false_t);
     self->type = JS_NODE_FALSE;
     self->next = 0;
     return self;
@@ -801,8 +801,8 @@ void js_node_false_exec(struct js_node_false_t* self, struct js_context_t* conte
     js_value_false_new(context);
 }
 
-struct js_node_null_t* js_node_null_new() {
-    struct js_node_null_t* self = (struct js_node_null_t*) malloc(sizeof(struct js_node_null_t));
+struct js_node_null_t* js_node_null_new(struct flow_memory_t* memory) {
+    struct js_node_null_t* self = flow_memory_alloc_typed(memory, struct js_node_null_t);
     self->type = JS_NODE_NULL;
     self->next = 0;
     return self;
@@ -822,8 +822,8 @@ void js_node_null_exec(struct js_node_null_t* self, struct js_context_t* context
     js_value_null_new(context);
 }
 
-struct js_node_this_t* js_node_this_new() {
-    struct js_node_this_t* self = (struct js_node_this_t*) malloc(sizeof(struct js_node_this_t));
+struct js_node_this_t* js_node_this_new(struct flow_memory_t* memory) {
+    struct js_node_this_t* self = flow_memory_alloc_typed(memory, struct js_node_this_t);
     self->type = JS_NODE_THIS;
     self->next = 0;
     return self;
@@ -844,8 +844,8 @@ void js_node_this_exec(struct js_node_this_t* self, struct js_context_t* context
     js_context_push_typed(context, this);
 }
 
-struct js_node_super_t* js_node_super_new() {
-    struct js_node_super_t* self = (struct js_node_super_t*) malloc(sizeof(struct js_node_super_t));
+struct js_node_super_t* js_node_super_new(struct flow_memory_t* memory) {
+    struct js_node_super_t* self = flow_memory_alloc_typed(memory, struct js_node_super_t);
     self->type = JS_NODE_SUPER;
     self->next = 0;
     return self;
@@ -864,8 +864,8 @@ void js_node_super_body(struct js_node_super_t* self, struct js_compiler_t* comp
 void js_node_super_exec(struct js_node_super_t* self, struct js_context_t* context) {
 }
 
-struct js_node_assignment_t* js_node_assignment_new(struct js_node_t* node, struct js_node_id_t* name, struct js_node_t* value) {
-    struct js_node_assignment_t* self = (struct js_node_assignment_t*) malloc(sizeof(struct js_node_assignment_t));
+struct js_node_assignment_t* js_node_assignment_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_id_t* name, struct js_node_t* value) {
+    struct js_node_assignment_t* self = flow_memory_alloc_typed(memory, struct js_node_assignment_t);
     self->type = JS_NODE_ASSIGNMENT;
     self->next = 0;
     self->node = node;
@@ -901,8 +901,8 @@ void js_node_assignment_exec(struct js_node_assignment_t* self, struct js_contex
     }
 }
 
-struct js_node_ternary_t* js_node_ternary_new(struct js_node_t* node, struct js_node_t* true_value, struct js_node_t* false_value) {
-    struct js_node_ternary_t* self = (struct js_node_ternary_t*) malloc(sizeof(struct js_node_ternary_t));
+struct js_node_ternary_t* js_node_ternary_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* true_value, struct js_node_t* false_value) {
+    struct js_node_ternary_t* self = flow_memory_alloc_typed(memory, struct js_node_ternary_t);
     self->type = JS_NODE_TERNARY;
     self->next = 0;
     self->node = node;
@@ -941,8 +941,8 @@ void js_node_ternary_exec(struct js_node_ternary_t* self, struct js_context_t* c
     }
 }
 
-struct js_node_or_t* js_node_or_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_or_t* self = (struct js_node_or_t*) malloc(sizeof(struct js_node_or_t));
+struct js_node_or_t* js_node_or_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_or_t* self = flow_memory_alloc_typed(memory, struct js_node_or_t);
     self->type = JS_NODE_OR;
     self->next = 0;
     self->node = node;
@@ -984,8 +984,8 @@ void js_node_or_exec(struct js_node_or_t* self, struct js_context_t* context) {
     }
 }
 
-struct js_node_and_t* js_node_and_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_and_t* self = (struct js_node_and_t*) malloc(sizeof(struct js_node_and_t));
+struct js_node_and_t* js_node_and_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_and_t* self = flow_memory_alloc_typed(memory, struct js_node_and_t);
     self->type = JS_NODE_AND;
     self->next = 0;
     self->node = node;
@@ -1027,8 +1027,8 @@ void js_node_and_exec(struct js_node_and_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_bitwise_or_t* js_node_bitwise_or_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_bitwise_or_t* self = (struct js_node_bitwise_or_t*) malloc(sizeof(struct js_node_bitwise_or_t));
+struct js_node_bitwise_or_t* js_node_bitwise_or_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_bitwise_or_t* self = flow_memory_alloc_typed(memory, struct js_node_bitwise_or_t);
     self->type = JS_NODE_BITWISE_OR;
     self->next = 0;
     self->node = node;
@@ -1069,8 +1069,8 @@ void js_node_bitwise_or_exec(struct js_node_bitwise_or_t* self, struct js_contex
     }
 }
 
-struct js_node_bitwise_xor_t* js_node_bitwise_xor_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_bitwise_xor_t* self = (struct js_node_bitwise_xor_t*) malloc(sizeof(struct js_node_bitwise_xor_t));
+struct js_node_bitwise_xor_t* js_node_bitwise_xor_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_bitwise_xor_t* self = flow_memory_alloc_typed(memory, struct js_node_bitwise_xor_t);
     self->type = JS_NODE_BITWISE_XOR;
     self->next = 0;
     self->node = node;
@@ -1112,8 +1112,8 @@ void js_node_bitwise_xor_exec(struct js_node_bitwise_xor_t* self, struct js_cont
     }
 }
 
-struct js_node_bitwise_and_t* js_node_bitwise_and_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_bitwise_and_t* self = (struct js_node_bitwise_and_t*) malloc(sizeof(struct js_node_bitwise_and_t));
+struct js_node_bitwise_and_t* js_node_bitwise_and_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_bitwise_and_t* self = flow_memory_alloc_typed(memory, struct js_node_bitwise_and_t);
     self->type = JS_NODE_BITWISE_AND;
     self->next = 0;
     self->node = node;
@@ -1155,8 +1155,8 @@ void js_node_bitwise_and_exec(struct js_node_bitwise_and_t* self, struct js_cont
     }
 }
 
-struct js_node_equal_t* js_node_equal_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_equal_t* self = (struct js_node_equal_t*) malloc(sizeof(struct js_node_equal_t));
+struct js_node_equal_t* js_node_equal_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_equal_t* self = flow_memory_alloc_typed(memory, struct js_node_equal_t);
     self->type = JS_NODE_EQUAL;
     self->next = 0;
     self->node = node;
@@ -1190,8 +1190,8 @@ void js_node_equal_exec(struct js_node_equal_t* self, struct js_context_t* conte
     else js_value_false_new(context);
 }
 
-struct js_node_not_equal_t* js_node_not_equal_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_not_equal_t* self = (struct js_node_not_equal_t*) malloc(sizeof(struct js_node_not_equal_t));
+struct js_node_not_equal_t* js_node_not_equal_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_not_equal_t* self = flow_memory_alloc_typed(memory, struct js_node_not_equal_t);
     self->type = JS_NODE_NOT_EQUAL;
     self->next = 0;
     self->node = node;
@@ -1225,8 +1225,8 @@ void js_node_not_equal_exec(struct js_node_not_equal_t* self, struct js_context_
     else js_value_false_new(context);
 }
 
-struct js_node_lower_equal_t* js_node_lower_equal_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_lower_equal_t* self = (struct js_node_lower_equal_t*) malloc(sizeof(struct js_node_lower_equal_t));
+struct js_node_lower_equal_t* js_node_lower_equal_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_lower_equal_t* self = flow_memory_alloc_typed(memory, struct js_node_lower_equal_t);
     self->type = JS_NODE_LOWER_EQUAL;
     self->next = 0;
     self->node = node;
@@ -1260,8 +1260,8 @@ void js_node_lower_equal_exec(struct js_node_lower_equal_t* self, struct js_cont
     else js_value_false_new(context);
 }
 
-struct js_node_greater_equal_t* js_node_greater_equal_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_greater_equal_t* self = (struct js_node_greater_equal_t*) malloc(sizeof(struct js_node_greater_equal_t));
+struct js_node_greater_equal_t* js_node_greater_equal_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_greater_equal_t* self = flow_memory_alloc_typed(memory, struct js_node_greater_equal_t);
     self->type = JS_NODE_GREATER_EQUAL;
     self->next = 0;
     self->node = node;
@@ -1295,8 +1295,8 @@ void js_node_greater_equal_exec(struct js_node_greater_equal_t* self, struct js_
     else js_value_false_new(context);
 }
 
-struct js_node_lower_than_t* js_node_lower_than_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_lower_than_t* self = (struct js_node_lower_than_t*) malloc(sizeof(struct js_node_lower_than_t));
+struct js_node_lower_than_t* js_node_lower_than_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_lower_than_t* self = flow_memory_alloc_typed(memory, struct js_node_lower_than_t);
     self->type = JS_NODE_LOWER_THAN;
     self->next = 0;
     self->node = node;
@@ -1330,8 +1330,8 @@ void js_node_lower_than_exec(struct js_node_lower_than_t* self, struct js_contex
     else js_value_false_new(context);
 }
 
-struct js_node_greater_than_t* js_node_greater_than_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_greater_than_t* self = (struct js_node_greater_than_t*) malloc(sizeof(struct js_node_greater_than_t));
+struct js_node_greater_than_t* js_node_greater_than_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_greater_than_t* self = flow_memory_alloc_typed(memory, struct js_node_greater_than_t);
     self->type = JS_NODE_GREATER_THAN;
     self->next = 0;
     self->node = node;
@@ -1365,8 +1365,8 @@ void js_node_greater_than_exec(struct js_node_greater_than_t* self, struct js_co
     else js_value_false_new(context);
 }
 
-struct js_node_shift_left_t* js_node_shift_left_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_shift_left_t* self = (struct js_node_shift_left_t*) malloc(sizeof(struct js_node_shift_left_t));
+struct js_node_shift_left_t* js_node_shift_left_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_shift_left_t* self = flow_memory_alloc_typed(memory, struct js_node_shift_left_t);
     self->type = JS_NODE_SHIFT_LEFT;
     self->next = 0;
     self->node = node;
@@ -1404,8 +1404,8 @@ void js_node_shift_left_exec(struct js_node_shift_left_t* self, struct js_contex
     }
 }
 
-struct js_node_shift_right_t* js_node_shift_right_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_shift_right_t* self = (struct js_node_shift_right_t*) malloc(sizeof(struct js_node_shift_right_t));
+struct js_node_shift_right_t* js_node_shift_right_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_shift_right_t* self = flow_memory_alloc_typed(memory, struct js_node_shift_right_t);
     self->type = JS_NODE_SHIFT_RIGHT;
     self->next = 0;
     self->node = node;
@@ -1443,8 +1443,8 @@ void js_node_shift_right_exec(struct js_node_shift_right_t* self, struct js_cont
     }
 }
 
-struct js_node_sum_t* js_node_sum_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_sum_t* self = (struct js_node_sum_t*) malloc(sizeof(struct js_node_sum_t));
+struct js_node_sum_t* js_node_sum_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_sum_t* self = flow_memory_alloc_typed(memory, struct js_node_sum_t);
     self->type = JS_NODE_SUM;
     self->next = 0;
     self->node = node;
@@ -1491,8 +1491,8 @@ void js_node_sum_exec(struct js_node_sum_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_sub_t* js_node_sub_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_sub_t* self = (struct js_node_sub_t*) malloc(sizeof(struct js_node_sub_t));
+struct js_node_sub_t* js_node_sub_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_sub_t* self = flow_memory_alloc_typed(memory, struct js_node_sub_t);
     self->type = JS_NODE_SUB;
     self->next = 0;
     self->node = node;
@@ -1536,8 +1536,8 @@ void js_node_sub_exec(struct js_node_sub_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_mul_t* js_node_mul_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_mul_t* self = (struct js_node_mul_t*) malloc(sizeof(struct js_node_mul_t));
+struct js_node_mul_t* js_node_mul_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_mul_t* self = flow_memory_alloc_typed(memory, struct js_node_mul_t);
     self->type = JS_NODE_MUL;
     self->next = 0;
     self->node = node;
@@ -1581,8 +1581,8 @@ void js_node_mul_exec(struct js_node_mul_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_div_t* js_node_div_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_div_t* self = (struct js_node_div_t*) malloc(sizeof(struct js_node_div_t));
+struct js_node_div_t* js_node_div_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_div_t* self = flow_memory_alloc_typed(memory, struct js_node_div_t);
     self->type = JS_NODE_DIV;
     self->next = 0;
     self->node = node;
@@ -1620,8 +1620,8 @@ void js_node_div_exec(struct js_node_div_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_not_t* js_node_not_new(struct js_node_t* node) {
-    struct js_node_not_t* self = (struct js_node_not_t*) malloc(sizeof(struct js_node_not_t));
+struct js_node_not_t* js_node_not_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_not_t* self = flow_memory_alloc_typed(memory, struct js_node_not_t);
     self->type = JS_NODE_NOT;
     self->next = 0;
     self->node = node;
@@ -1649,8 +1649,8 @@ void js_node_not_exec(struct js_node_not_t* self, struct js_context_t* context) 
     else js_value_false_new(context);
 }
 
-struct js_node_neg_t* js_node_neg_new(struct js_node_t* node) {
-    struct js_node_neg_t* self = (struct js_node_neg_t*) malloc(sizeof(struct js_node_neg_t));
+struct js_node_neg_t* js_node_neg_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_neg_t* self = flow_memory_alloc_typed(memory, struct js_node_neg_t);
     self->type = JS_NODE_NEG;
     self->next = 0;
     self->node = node;
@@ -1683,8 +1683,8 @@ void js_node_neg_exec(struct js_node_neg_t* self, struct js_context_t* context) 
     }
 }
 
-struct js_node_pre_inc_t* js_node_pre_inc_new(struct js_node_t* node) {
-    struct js_node_pre_inc_t* self = (struct js_node_pre_inc_t*) malloc(sizeof(struct js_node_pre_inc_t));
+struct js_node_pre_inc_t* js_node_pre_inc_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_pre_inc_t* self = flow_memory_alloc_typed(memory, struct js_node_pre_inc_t);
     self->type = JS_NODE_PRE_INC;
     self->next = 0;
     self->node = node;
@@ -1708,8 +1708,8 @@ void js_node_pre_inc_exec(struct js_node_pre_inc_t* self, struct js_context_t* c
     // TODO
 }
 
-struct js_node_pre_dec_t* js_node_pre_dec_new(struct js_node_t* node) {
-    struct js_node_pre_dec_t* self = (struct js_node_pre_dec_t*) malloc(sizeof(struct js_node_pre_dec_t));
+struct js_node_pre_dec_t* js_node_pre_dec_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_pre_dec_t* self = flow_memory_alloc_typed(memory, struct js_node_pre_dec_t);
     self->type = JS_NODE_PRE_DEC;
     self->next = 0;
     self->node = node;
@@ -1733,8 +1733,8 @@ void js_node_pre_dec_exec(struct js_node_pre_dec_t* self, struct js_context_t* c
     // TODO
 }
 
-struct js_node_pos_inc_t* js_node_pos_inc_new(struct js_node_t* node) {
-    struct js_node_pos_inc_t* self = (struct js_node_pos_inc_t*) malloc(sizeof(struct js_node_pos_inc_t));
+struct js_node_pos_inc_t* js_node_pos_inc_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_pos_inc_t* self = flow_memory_alloc_typed(memory, struct js_node_pos_inc_t);
     self->type = JS_NODE_POS_INC;
     self->next = 0;
     self->node = node;
@@ -1758,8 +1758,8 @@ void js_node_pos_inc_exec(struct js_node_pos_inc_t* self, struct js_context_t* c
     // TODO
 }
 
-struct js_node_pos_dec_t* js_node_pos_dec_new(struct js_node_t* node) {
-    struct js_node_pos_dec_t* self = (struct js_node_pos_dec_t*) malloc(sizeof(struct js_node_pos_dec_t));
+struct js_node_pos_dec_t* js_node_pos_dec_new(struct flow_memory_t* memory, struct js_node_t* node) {
+    struct js_node_pos_dec_t* self = flow_memory_alloc_typed(memory, struct js_node_pos_dec_t);
     self->type = JS_NODE_POS_DEC;
     self->next = 0;
     self->node = node;
@@ -1783,8 +1783,8 @@ void js_node_pos_dec_exec(struct js_node_pos_dec_t* self, struct js_context_t* c
     // TODO
 }
 
-struct js_node_get_t* js_node_get_new(struct js_node_t* node, struct js_node_id_t* value) {
-    struct js_node_get_t* self = (struct js_node_get_t*) malloc(sizeof(struct js_node_get_t));
+struct js_node_get_t* js_node_get_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_id_t* value) {
+    struct js_node_get_t* self = flow_memory_alloc_typed(memory, struct js_node_get_t);
     self->type = JS_NODE_GET;
     self->next = 0;
     self->node = node;
@@ -1810,8 +1810,8 @@ void js_node_get_exec(struct js_node_get_t* self, struct js_context_t* context) 
     // TODO
 }
 
-struct js_node_array_t* js_node_array_new(struct js_node_t* node, struct js_node_t* value) {
-    struct js_node_array_t* self = (struct js_node_array_t*) malloc(sizeof(struct js_node_array_t));
+struct js_node_array_t* js_node_array_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value) {
+    struct js_node_array_t* self = flow_memory_alloc_typed(memory, struct js_node_array_t);
     self->type = JS_NODE_ARRAY;
     self->next = 0;
     self->node = node;
@@ -1839,8 +1839,8 @@ void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* conte
     // TODO
 }
 
-struct js_node_call_t* js_node_call_new(struct js_node_t* node, struct js_node_t* param) {
-    struct js_node_call_t* self = (struct js_node_call_t*) malloc(sizeof(struct js_node_call_t));
+struct js_node_call_t* js_node_call_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* param) {
+    struct js_node_call_t* self = flow_memory_alloc_typed(memory, struct js_node_call_t);
     self->type = JS_NODE_CALL;
     self->next = 0;
     self->node = node;

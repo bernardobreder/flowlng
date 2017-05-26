@@ -85,7 +85,7 @@ int eval_func(struct flow_argument_t* arg_node) {
     struct flow_argument_t* arg = arg_node;
     while (arg) {
         struct js_token_t* tokens = js_lexer(arg->value);
-        struct js_parser_t* parser = js_parser_new(tokens);
+        struct js_parser_t* parser = js_parser_new(memory, tokens);
         struct js_node_t* node = js_parser(parser, tokens);
         js_parser_free(parser);
         js_tokens_free(tokens);
@@ -132,7 +132,7 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
             char* source = (char*) flow_io_file(arg->value);
             if (source) {
                 struct js_token_t* tokens = js_lexer(source);
-                struct js_parser_t* parser = js_parser_new(tokens);
+                struct js_parser_t* parser = js_parser_new(memory, tokens);
                 struct js_node_t* node = js_parser(parser, tokens);
                 js_parser_free(parser);
                 js_tokens_free(tokens);

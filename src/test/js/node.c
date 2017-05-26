@@ -7,7 +7,7 @@
 static void test_js_node_exec(char* code, char* expected) {
     struct flow_memory_t* memory = flow_memory_new();
     struct js_token_t* tokens = js_lexer(code);
-    struct js_parser_t* parser = js_parser_new(tokens);
+    struct js_parser_t* parser = js_parser_new(memory, tokens);
     struct js_node_t* node = js_parser(parser, tokens);
     js_parser_free(parser);
     js_tokens_free(tokens);
@@ -33,11 +33,11 @@ static void test_js_node_exec(char* code, char* expected) {
         while (!js_context_empty(context)) {
             js_context_pop(context);
         }
+        js_context_free(context);
+        js_node_free_typed(node);
         if (memory->count != 0) {
             printf("%s\n%zu objects alive\n\n", code, memory->count);
         }
-        js_context_free(context);
-        js_node_free_typed(node);
         flow_memory_free(memory);
     }
 }
