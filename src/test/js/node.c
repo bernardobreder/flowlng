@@ -15,8 +15,10 @@ static void test_js_node_exec(char* code, char* expected) {
         js_node_error_print(js_node_error_revert(js_node_error_type(node)));
         assert(0);
     } else {
-        js_node_head(node);
-        js_node_body(node);
+        struct js_compiler_t* compiler = js_compiler_new(memory);
+        js_node_head(node, compiler);
+        js_node_body(node, compiler);
+        js_compiler_free(compiler);
         struct js_context_t* context = js_context_new(memory);
         js_value_obj_new(context);
         js_node_exec_typed(node, context);
