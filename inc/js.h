@@ -695,8 +695,8 @@ void js_value_str_concat(struct js_context_t* context);
         if (self->next) js_node_free_typed(self->next); \
         js_free(self);
 #define js_node_free_typed(NODE) js_node_free((struct js_node_t*)NODE)
-#define js_node_head_typed(NODE) js_node_head((struct js_node_t*)NODE, compiler)
-#define js_node_body_typed(NODE) js_node_body((struct js_node_t*)NODE, compiler)
+#define js_node_head_typed(NODE, COMPILER) js_node_head((struct js_node_t*)NODE, COMPILER)
+#define js_node_body_typed(NODE, COMPILER) js_node_body((struct js_node_t*)NODE, COMPILER)
 #define js_node_exec_typed(NODE, CONTEXT) js_node_exec((struct js_node_t*)NODE, CONTEXT)
 //void js_node_compile(struct js_node_t* self);
 void js_node_free(struct js_node_t* self);
