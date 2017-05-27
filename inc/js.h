@@ -126,6 +126,7 @@ struct js_parser_t {
 };
 
 struct js_compiler_t {
+    struct flow_memory_t* memory;
     struct js_compiler_error_t* error;
 };
 
@@ -579,6 +580,7 @@ void js_compiler_error_free(struct js_compiler_t* self);
 
 struct js_compiler_t* js_compiler_new(struct flow_memory_t* memory);
 void js_compiler_free(struct js_compiler_t* self);
+struct js_node_t* js_compiler_exec(struct js_compiler_t* self, char * source);
 js_bool js_compiler_error_empty(struct js_compiler_t* self);
 void js_compiler_error_push(struct js_compiler_t* self, struct js_compiler_error_t* error);
 struct js_compiler_error_t* js_compiler_error_pop(struct js_compiler_t* self);
@@ -587,11 +589,11 @@ void js_token_free(struct js_token_t* self);
 
 void js_tokens_free(struct js_token_t* self);
 
-struct js_token_t* js_lexer(const char* text);
+struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text);
 
 struct js_parser_t* js_parser_new(struct flow_memory_t* memory, struct js_token_t* tokens);
 void js_parser_free(struct js_parser_t* self);
-struct js_node_t* js_parser(struct js_parser_t* self, struct js_token_t* tokens);
+struct js_node_t* js_parser(struct js_parser_t* self);
 
 struct js_context_t* js_context_new(struct flow_memory_t* memory);
 void js_context_free(struct js_context_t* self);

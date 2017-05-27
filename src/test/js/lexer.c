@@ -4,20 +4,25 @@
 
 void test_js_lexer() {
     {
-        struct js_token_t* tokens = js_lexer("");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "");
         struct js_token_t* token = tokens;
         assert(token->type == JS_TOKEN_EOF);
         token = token->next;
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("a");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "a");
         assert(!strcmp(tokens->word, "a"));
         assert(tokens->type == JS_TOKEN_ID);
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("a b");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "a b");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "a"));
@@ -32,9 +37,11 @@ void test_js_lexer() {
         token = token->next;
         
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("a b c");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "a b c");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "a"));
@@ -53,9 +60,11 @@ void test_js_lexer() {
         token = token->next;
         
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("1");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "1");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "1"));
@@ -66,9 +75,11 @@ void test_js_lexer() {
         token = token->next;
         
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("-");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "-");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "-"));
@@ -79,9 +90,11 @@ void test_js_lexer() {
         token = token->next;
         
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("for 1 -");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "for 1 -");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "for"));
@@ -100,9 +113,11 @@ void test_js_lexer() {
         token = token->next;
         
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
     {
-        struct js_token_t* tokens = js_lexer("for(a==2){\n}");
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_token_t* tokens = js_lexer(memory, "for(a==2){\n}");
         struct js_token_t* token = tokens;
         
         assert(!strcmp(token->word, "for"));
@@ -146,5 +161,6 @@ void test_js_lexer() {
 
         assert(token == 0);
         js_tokens_free(tokens);
+        flow_memory_free(memory);
     }
 }

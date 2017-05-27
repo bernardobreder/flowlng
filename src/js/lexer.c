@@ -4,7 +4,21 @@
 #include "xstring.h"
 #include "js.h"
 
-struct js_token_t* js_lexer(const char* text) {
+void js_token_free(struct js_token_t* self) {
+    if (self->word) free(self->word);
+    flow_memory_item_free(self);
+}
+
+void js_tokens_free(struct js_token_t* self) {
+    struct js_token_t* aux = self;
+    while (aux) {
+        struct js_token_t* next = aux->next;
+        js_token_free(aux);
+        aux = next;
+    }
+}
+
+struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
     struct js_token_t *head = 0, *tail = 0;
     unsigned int lin = 1, col = 1;
 	char* pc = (char*) text;
@@ -59,7 +73,7 @@ struct js_token_t* js_lexer(const char* text) {
                 if (strcmp11(word, "constructor")) type = JS_TOKEN_CONSTRUCTOR;
             }
             
-            struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+            struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = strndup(word, size);
             token->line = lin;
@@ -83,7 +97,7 @@ struct js_token_t* js_lexer(const char* text) {
             size_t size = (size_t) ((pc - text) - begin);
 			char* word = (char*) strndup(text + begin, size);
 			
-			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = JS_TOKEN_NUMBER;
             token->word = word;
 			token->line = lin;
@@ -120,7 +134,7 @@ struct js_token_t* js_lexer(const char* text) {
             size_t size = (size_t) ((pc - text) - begin);
 			char* word = (char*) strndup(text + begin, size);
 
-			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
             token->line = lin;
@@ -155,7 +169,7 @@ struct js_token_t* js_lexer(const char* text) {
             size_t size = (size_t) ((pc - text) - begin);
 			char* word = (char*) strndup(text + begin, size);
 
-			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
             token->line = lin;
@@ -184,7 +198,7 @@ struct js_token_t* js_lexer(const char* text) {
             size_t size = (size_t) ((pc - text) - begin);
 			char* word = (char*) strndup(text + begin, size);
 
-			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
             token->line = lin;
@@ -198,7 +212,7 @@ struct js_token_t* js_lexer(const char* text) {
 			lin++;
 			col = 1;
 		} else {
-			struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = c;
             token->word = strndup(pc, 1);
             token->line = lin;
@@ -212,7 +226,7 @@ struct js_token_t* js_lexer(const char* text) {
 		c = *(++pc);
 	}
     {
-        struct js_token_t* token = (struct js_token_t*) malloc(sizeof(struct js_token_t));
+        struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
         token->type = JS_TOKEN_EOF;
         token->word = strdup("<EOF>");
         token->line = lin;

@@ -6,9 +6,9 @@
 
 static void test_js_node_exec(char* code, char* expected) {
     struct flow_memory_t* memory = flow_memory_new();
-    struct js_token_t* tokens = js_lexer(code);
+    struct js_token_t* tokens = js_lexer(memory, code);
     struct js_parser_t* parser = js_parser_new(memory, tokens);
-    struct js_node_t* node = js_parser(parser, tokens);
+    struct js_node_t* node = js_parser(parser);
     js_parser_free(parser);
     js_tokens_free(tokens);
     if (js_node_error_is(node)) {

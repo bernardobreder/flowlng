@@ -11,9 +11,10 @@ function a() do
     return 2
 end
 
-var aa = 1
-var bb = 3
-var cc = aa + bb
+var a = 1
+var b = 3
+var c = a + b
 
 //return false or false or true
-return 2 + "a" + "b" + b() + cc
+return 2 + "a" + "b" + b + c
+//return c

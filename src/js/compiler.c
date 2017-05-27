@@ -15,11 +15,26 @@ void js_compiler_error_free(struct js_compiler_t* self) {
 
 struct js_compiler_t* js_compiler_new(struct flow_memory_t* memory) {
     struct js_compiler_t* self = flow_memory_alloc_typed(memory, struct js_compiler_t);
+    self->memory = memory;
     return self;
 }
 
 void js_compiler_free(struct js_compiler_t* self) {
+    self->memory = 0;
     flow_memory_item_free(self);
+}
+
+struct js_node_t* js_compiler_exec(struct js_compiler_t* self, char * source) {
+    struct js_token_t* tokens = js_lexer(self->memory, source);
+    struct js_parser_t* parser = js_parser_new(self->memory, tokens);
+    struct js_node_t* node = js_parser(parser);
+    js_parser_free(parser);
+    js_tokens_free(tokens);
+    if (!js_nodes_error_is(node)) {
+        js_node_head(node, self);
+        js_node_body(node, self);
+    }
+    return node;
 }
 
 js_bool js_compiler_error_empty(struct js_compiler_t* self) {

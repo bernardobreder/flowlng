@@ -82,21 +82,14 @@ int help_func() {
 
 int eval_func(struct flow_argument_t* arg_node) {
     struct flow_memory_t* memory = flow_memory_new();
+    struct js_compiler_t* compiler = js_compiler_new(memory);
     struct flow_argument_t* arg = arg_node;
     while (arg) {
-        struct js_token_t* tokens = js_lexer(arg->value);
-        struct js_parser_t* parser = js_parser_new(memory, tokens);
-        struct js_node_t* node = js_parser(parser, tokens);
-        js_parser_free(parser);
-        js_tokens_free(tokens);
+        struct js_node_t* node = js_compiler_exec(compiler, arg->value);
         struct js_node_error_t* error = js_nodes_error_is(node);
         if (error) {
             js_node_error_print(js_node_error_revert(error));
         } else {
-            struct js_compiler_t* compiler = js_compiler_new(memory);
-            js_node_head(node, compiler);
-            js_node_body(node, compiler);
-            js_compiler_free(compiler);
             struct js_context_t* context = js_context_new(memory);
             js_value_obj_new(context);
             js_node_exec_typed(node, context);
@@ -114,6 +107,7 @@ int eval_func(struct flow_argument_t* arg_node) {
         }
         arg = arg->next;
     }
+    js_compiler_free(compiler);
     flow_memory_free(memory);
     return 0;
 }
@@ -128,22 +122,15 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
     } else {
         struct flow_memory_t* memory = flow_memory_new();
         struct flow_argument_t* arg = arg_node;
+        struct js_compiler_t* compiler = js_compiler_new(memory);
         while (arg) {
             char* source = (char*) flow_io_file(arg->value);
             if (source) {
-                struct js_token_t* tokens = js_lexer(source);
-                struct js_parser_t* parser = js_parser_new(memory, tokens);
-                struct js_node_t* node = js_parser(parser, tokens);
-                js_parser_free(parser);
-                js_tokens_free(tokens);
+                struct js_node_t* node = js_compiler_exec(compiler, source);
                 struct js_node_error_t* error = js_nodes_error_is(node);
                 if (error) {
                     js_node_error_print(js_node_error_revert(error));
                 } else {
-                    struct js_compiler_t* compiler = js_compiler_new(memory);
-                    js_node_head(node, compiler);
-                    js_node_body(node, compiler);
-                    js_compiler_free(compiler);
                     struct js_context_t* context = js_context_new(memory);
                     js_value_obj_new(context);
                     js_node_exec_typed(node, context);
@@ -168,6 +155,7 @@ int exec_func(int test_mode, int eval_mode, int help_mode, struct flow_argument_
             free(arg);
             arg = arg_next;
         }
+        js_compiler_free(compiler);
         flow_memory_free(memory);
 
         //printf("Creating watch\n");
