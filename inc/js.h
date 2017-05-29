@@ -90,6 +90,8 @@
 #define JS_NODE_CALL 46
 #define JS_NODE_PARAM 47
 #define JS_NODE_STMT_EXP 50
+#define JS_NODE_OBJ 51
+#define JS_NODE_OBJ_ENTRY 52
 
 #define JS_VALUE_NULL 0
 #define JS_VALUE_BOOL 1
@@ -291,6 +293,19 @@ struct js_node_super_t {
     struct js_node_t* next;
 };
 
+struct js_node_obj_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_obj_entry_t* entry;
+};
+
+struct js_node_obj_entry_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_id_t* name;
+    struct js_node_t* value;
+};
+
 struct js_node_assignment_t {
     unsigned char type;
     struct js_node_t* next;
@@ -466,7 +481,7 @@ struct js_node_get_t {
     unsigned char type;
     struct js_node_t* next;
     struct js_node_t* node;
-    struct js_node_id_t* value;
+    struct js_node_id_t* name;
 };
 
 struct js_node_array_t {
@@ -764,6 +779,18 @@ void js_node_this_head(struct js_node_this_t* self, struct js_compiler_t* compil
 void js_node_this_body(struct js_node_this_t* self, struct js_compiler_t* compiler);
 void js_node_this_exec(struct js_node_this_t* self, struct js_context_t* context);
 
+struct js_node_obj_t* js_node_obj_new(struct flow_memory_t* memory, struct js_node_obj_entry_t* entry);
+void js_node_obj_free(struct js_node_obj_t* self);
+void js_node_obj_head(struct js_node_obj_t* self, struct js_compiler_t* compiler);
+void js_node_obj_body(struct js_node_obj_t* self, struct js_compiler_t* compiler);
+void js_node_obj_exec(struct js_node_obj_t* self, struct js_context_t* context);
+
+struct js_node_obj_entry_t* js_node_obj_entry_new(struct flow_memory_t* memory, struct js_node_id_t* name, struct js_node_t* value);
+void js_node_obj_entry_free(struct js_node_obj_entry_t* self);
+void js_node_obj_entry_head(struct js_node_obj_entry_t* self, struct js_compiler_t* compiler);
+void js_node_obj_entry_body(struct js_node_obj_entry_t* self, struct js_compiler_t* compiler);
+void js_node_obj_entry_exec(struct js_node_obj_entry_t* self, struct js_context_t* context);
+
 struct js_node_super_t* js_node_super_new(struct flow_memory_t* memory);
 void js_node_super_free(struct js_node_super_t* self);
 void js_node_super_head(struct js_node_super_t* self, struct js_compiler_t* compiler);
@@ -920,7 +947,7 @@ void js_node_pos_dec_head(struct js_node_pos_dec_t* self, struct js_compiler_t* 
 void js_node_pos_dec_body(struct js_node_pos_dec_t* self, struct js_compiler_t* compiler);
 void js_node_pos_dec_exec(struct js_node_pos_dec_t* self, struct js_context_t* context);
 
-struct js_node_get_t* js_node_get_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_id_t* value);
+struct js_node_get_t* js_node_get_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_id_t* name);
 void js_node_get_free(struct js_node_get_t* self);
 void js_node_get_head(struct js_node_get_t* self, struct js_compiler_t* compiler);
 void js_node_get_body(struct js_node_get_t* self, struct js_compiler_t* compiler);

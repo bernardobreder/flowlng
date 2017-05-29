@@ -61,6 +61,62 @@ struct js_node_t* js_parser_expression(struct js_parser_t* self);
 
 struct js_node_t* js_parser_statement_block(struct js_parser_t* self);
 
+struct js_node_t* js_parser_expression_object_entry(struct js_parser_t* self) {
+    js_node_def_token(id_token);
+    if (js_parser_type_not(JS_TOKEN_ID)) {
+        return js_parser_error(self->memory, "exp object entry: '<id>'", id_token, 0);
+    }
+    js_parser_id_def(id);
+    js_parser_next();
+    
+    if (js_parser_type(JS_TOKEN_EOF)) {
+        return js_parser_error(self->memory, "exp object entry: <id> ':'", self->token, 0);
+    }
+    
+    js_node_def_token(dot_token);
+    if (js_parser_type_not(':')) {
+        return js_parser_error(self->memory, "exp object entry: <id> ':'", dot_token, 0);
+    }
+    js_parser_next();
+    
+    js_node_def_token(exp_token);
+    js_parser_exp_def(exp);
+    if (js_node_error_is(exp)) {
+        return js_parser_error(self->memory, "exp object entry: <id> : <exp>", exp_token, exp);
+    }
+    
+    return js_node_cast(js_node_obj_entry_new(self->memory, id, exp));
+}
+
+struct js_node_t* js_parser_expression_object(struct js_parser_t* self) {
+    js_node_list_def(head, tail);
+    js_parser_next();
+    
+    if (js_parser_type(JS_TOKEN_EOF)) {
+        return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", self->token, 0);
+    }
+    
+    while (js_parser_type_not('}')) {
+        if (js_parser_type(JS_TOKEN_EOF)) {
+            return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", self->token, 0);
+        }
+        
+        js_node_def_token(entry_token);
+        js_parser_func_def(entry_node, js_parser_expression_object_entry);
+        if (js_node_error_is(entry_node)) {
+            return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", entry_token, entry_node);
+        }
+        js_node_add(head, tail, entry_node);
+    }
+    
+    if (js_parser_type(JS_TOKEN_EOF)) {
+        return js_parser_error(self->memory, "exp primitive: { <id> : <exp> '}'", self->token, 0);
+    }
+    
+    js_parser_next();
+    return js_node_cast(js_node_obj_new(self->memory, (struct js_node_obj_entry_t*) head));
+}
+
 struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
     js_node_def_token(token);
     if (js_parser_type('(')) {
@@ -69,17 +125,19 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
         js_node_def_token(exp_token);
         js_parser_exp_def(expression);
         if (js_node_error_is(expression)) {
-            return js_parser_error(self->memory, "expression primitive:", exp_token, expression);
+            return js_parser_error(self->memory, "exp primitive:", exp_token, expression);
         }
         
         js_node_def_token(close_token);
         if (js_parser_type_not(')')) {
             js_node_free(expression);
-            return js_parser_error(self->memory, "expression primitive: ( <expression> ')' expected", close_token, 0);
+            return js_parser_error(self->memory, "exp primitive: ( <exp> ')'", close_token, 0);
         }
         js_parser_next();
         
         return expression;
+    } else if (js_parser_type('{')) {
+        return js_parser_expression_object(self);
     } else if (js_parser_type(JS_TOKEN_ID)) {
         js_parser_id_def(id);
         js_parser_next();
@@ -91,7 +149,7 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
             js_parser_exp_def(value);
             if (js_node_error_is(value)) {
                 js_node_id_free(id);
-                return js_parser_error(self->memory, "expression primitive: <id> = '<expression>' expected", value_token, value);
+                return js_parser_error(self->memory, "exp primitive: <id> = '<exp>'", value_token, value);
             }
             js_node_def(this, js_node_cast(js_node_this_new(self->memory)));
             return js_node_cast(js_node_assignment_new(self->memory, this, id, value));
@@ -137,7 +195,7 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
             return node;
         }
     } else {
-        return js_parser_error(self->memory, "expression primitive: ['(', <id>, <string>, <number>, true, false, this, super, null] expected", token, 0);
+        return js_parser_error(self->memory, "exp primitive: ['(', '{', <id>, <string>, <number>, true, false, this, super, null]", token, 0);
     }
 }
 
@@ -145,7 +203,7 @@ struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_primary);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression member:", exp_token, node);
+        return js_parser_error(self->memory, "exp member:", exp_token, node);
     }
     
     while (js_parser_type('.') || js_parser_type('[') || js_parser_type('(')) {
@@ -155,10 +213,10 @@ struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
             js_node_def_token(id_token);
             if (js_parser_type_not(JS_TOKEN_ID)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression member:", id_token, 0);
+                return js_parser_error(self->memory, "exp member:", id_token, 0);
             }
-            js_parser_next();
             js_parser_id_def(id);
+            js_parser_next();
             
             node = js_node_cast(js_node_get_new(self->memory, node, id));
         } else if (js_parser_type('(')) {
@@ -172,7 +230,7 @@ struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
                     if (js_node_error_is(param)) {
                         js_node_free(node);
                         js_node_free(head);
-                        return js_parser_error(self->memory, "expression member:", param_token, param);
+                        return js_parser_error(self->memory, "exp member:", param_token, param);
                     }
                     js_node_add(head, tail, param)
                     
@@ -186,7 +244,7 @@ struct js_node_t* js_parser_expression_member(struct js_parser_t* self) {
             if (js_parser_type_not(')')) {
                 js_node_free(node);
                 js_node_free(head);
-                return js_parser_error(self->memory, "expression member:", close_token, 0);
+                return js_parser_error(self->memory, "exp member:", close_token, 0);
             }
             js_parser_next();
             
@@ -200,7 +258,7 @@ struct js_node_t* js_parser_expression_constructor_call(struct js_parser_t* self
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_member);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression constructor call:", exp_token, node);
+        return js_parser_error(self->memory, "exp constructor call:", exp_token, node);
     }
     return node;
 }
@@ -209,7 +267,7 @@ struct js_node_t* js_parser_expression_constructor(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_constructor_call);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression constructor:", exp_token, node);
+        return js_parser_error(self->memory, "exp constructor:", exp_token, node);
     }
     return node;
 }
@@ -223,7 +281,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: -- '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: -- '<expression constructor>'", token, node);
         }
         
         node = js_node_cast(js_node_pre_dec_new(self->memory, node));
@@ -234,7 +292,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: ++ '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: ++ '<expression constructor>'", token, node);
         }
         
         node = js_node_cast(js_node_pre_inc_new(self->memory, node));
@@ -244,7 +302,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: - '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: - '<expression constructor>'", token, node);
         }
         
         node = (struct js_node_t*) js_node_neg_new(self->memory, node);
@@ -254,7 +312,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: ! '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: ! '<expression constructor>'", token, node);
         }
         
         node = (struct js_node_t*) js_node_not_new(self->memory, node);
@@ -262,7 +320,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(exp_token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: '<expression constructor>'", exp_token, node);
+            return js_parser_error(self->memory, "exp unary: '<expression constructor>'", exp_token, node);
         }
     }
     
@@ -273,7 +331,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: -- '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: -- '<expression constructor>'", token, node);
         }
         
         node = js_node_cast(js_node_pos_dec_new(self->memory, node));
@@ -284,7 +342,7 @@ struct js_node_t* js_parser_expression_unary(struct js_parser_t* self) {
         js_node_def_token(token);
         node = js_node_cast(js_parser_expression_constructor(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "expression unary: ++ '<expression constructor>' expected", token, node);
+            return js_parser_error(self->memory, "exp unary: ++ '<expression constructor>'", token, node);
         }
         
         node = js_node_cast(js_node_pos_inc_new(self->memory, node));
@@ -297,7 +355,7 @@ struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) 
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_unary);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression multiplicative:", exp_token, node);
+        return js_parser_error(self->memory, "exp multiplicative:", exp_token, node);
     }
     
     while (js_parser_type('*') || js_parser_type('/')) {
@@ -308,7 +366,7 @@ struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) 
             js_parser_func_def(value, js_parser_expression_unary);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression multiplicative: <expression unary> * '<expression unary>' expected", token, value);
+                return js_parser_error(self->memory, "exp multiplicative: <expression unary> * '<expression unary>'", token, value);
             }
             
             node = js_node_cast(js_node_mul_new(self->memory, node, value));
@@ -319,7 +377,7 @@ struct js_node_t* js_parser_expression_multiplicative(struct js_parser_t* self) 
             js_parser_func_def(value, js_parser_expression_unary);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression multiplicative: <expression unary> * '<expression unary>' expected", token, value);
+                return js_parser_error(self->memory, "exp multiplicative: <expression unary> * '<expression unary>'", token, value);
             }
             
             node = js_node_cast(js_node_div_new(self->memory, node, value));
@@ -333,7 +391,7 @@ struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_multiplicative);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression additive:", exp_token, node);
+        return js_parser_error(self->memory, "exp additive:", exp_token, node);
     }
     
     while (js_parser_type('+') || js_parser_type('-')) {
@@ -344,7 +402,7 @@ struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
             js_parser_func_def(value, js_parser_expression_multiplicative);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression additive: <expression multiplicative> + '<expression multiplicative>' expected", token, value);
+                return js_parser_error(self->memory, "exp additive: <expression multiplicative> + '<expression multiplicative>'", token, value);
             }
             
             node = js_node_cast(js_node_sum_new(self->memory, node, value));
@@ -355,7 +413,7 @@ struct js_node_t* js_parser_expression_additive(struct js_parser_t* self) {
             js_parser_func_def(value, js_parser_expression_multiplicative);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression additive: <expression multiplicative> - '<expression multiplicative>' expected", token, value);
+                return js_parser_error(self->memory, "exp additive: <expression multiplicative> - '<expression multiplicative>'", token, value);
             }
             
             node = js_node_cast(js_node_sub_new(self->memory, node, value));
@@ -369,7 +427,7 @@ struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_additive);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression shift:", exp_token, node);
+        return js_parser_error(self->memory, "exp shift:", exp_token, node);
     }
     
     while ((js_parser_type('>') && js_parser_next_type('>')) || (js_parser_type('<') && js_parser_next_type('<'))) {
@@ -381,7 +439,7 @@ struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
             js_parser_func_def(value, js_parser_expression_additive);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression shift: <expression additive> >> '<expression additive>' expected", token, value);
+                return js_parser_error(self->memory, "exp shift: <expression additive> >> '<expression additive>'", token, value);
             }
             
             node = js_node_cast(js_node_shift_right_new(self->memory, node, value));
@@ -393,7 +451,7 @@ struct js_node_t* js_parser_expression_shift(struct js_parser_t* self) {
             js_parser_func_def(value, js_parser_expression_additive);
             if (js_node_error_is(value)) {
                 js_node_free(node);
-                return js_parser_error(self->memory, "expression shift: <expression additive> << '<expression additive>' expected", token, value);
+                return js_parser_error(self->memory, "exp shift: <expression additive> << '<expression additive>'", token, value);
             }
             
             node = js_node_cast(js_node_shift_left_new(self->memory, node, value));
@@ -407,7 +465,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_shift);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression equality:", exp_token, node);
+        return js_parser_error(self->memory, "exp equality:", exp_token, node);
     }
     
     if (js_parser_type('=') && js_parser_next_type('=')) {
@@ -418,7 +476,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> == '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> == '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_equal_new(self->memory, node, value));
@@ -430,7 +488,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> != '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> != '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_not_equal_new(self->memory, node, value));
@@ -442,7 +500,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> <= '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> <= '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_lower_equal_new(self->memory, node, value));
@@ -454,7 +512,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> >= '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> >= '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_greater_equal_new(self->memory, node, value));
@@ -465,7 +523,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> < '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> < '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_lower_than_new(self->memory, node, value));
@@ -476,7 +534,7 @@ struct js_node_t* js_parser_expression_equality(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_equality);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression equality: <expression shift> > '<expression equality>' expected", token, value);
+            return js_parser_error(self->memory, "exp equality: <expression shift> > '<expression equality>'", token, value);
         }
         
         node = js_node_cast(js_node_greater_than_new(self->memory, node, value));
@@ -489,7 +547,7 @@ struct js_node_t* js_parser_expression_bitwise_and(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_equality);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression bitwise and:", exp_token, node);
+        return js_parser_error(self->memory, "exp bitwise and:", exp_token, node);
     }
     
     if (js_parser_type(JS_TOKEN_BITAND)) {
@@ -499,7 +557,7 @@ struct js_node_t* js_parser_expression_bitwise_and(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_bitwise_and);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression bitwise and: <expression bitwise equality> bitand '<expression bitwise and>' expected", token, value);
+            return js_parser_error(self->memory, "exp bitwise and: <expression bitwise equality> bitand '<expression bitwise and>'", token, value);
         }
         
         node = js_node_cast(js_node_bitwise_and_new(self->memory, node, value));
@@ -512,7 +570,7 @@ struct js_node_t* js_parser_expression_bitwise_xor(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_bitwise_and);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression bitwise xor:", exp_token, node);
+        return js_parser_error(self->memory, "exp bitwise xor:", exp_token, node);
     }
     
     if (js_parser_type(JS_TOKEN_XOR)) {
@@ -522,7 +580,7 @@ struct js_node_t* js_parser_expression_bitwise_xor(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_bitwise_xor);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression bitwise or: <expression bitwise and> xor '<expression bitwise xor>' expected", token, value);
+            return js_parser_error(self->memory, "exp bitwise or: <expression bitwise and> xor '<expression bitwise xor>'", token, value);
         }
         
         node = js_node_cast(js_node_bitwise_xor_new(self->memory, node, value));
@@ -535,7 +593,7 @@ struct js_node_t* js_parser_expression_bitwise_or(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_bitwise_xor);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression bitwise or:", exp_token, node);
+        return js_parser_error(self->memory, "exp bitwise or:", exp_token, node);
     }
     
     if (js_parser_type(JS_TOKEN_BITOR)) {
@@ -545,7 +603,7 @@ struct js_node_t* js_parser_expression_bitwise_or(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_bitwise_or);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression bitwise or: <expression bitwise xor> bitor '<expression bitwise or>' expected", token, value);
+            return js_parser_error(self->memory, "exp bitwise or: <expression bitwise xor> bitor '<expression bitwise or>'", token, value);
         }
         
         node = js_node_cast(js_node_bitwise_or_new(self->memory, node, value));
@@ -558,7 +616,7 @@ struct js_node_t* js_parser_expression_and(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_bitwise_or);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression and:", exp_token, node);
+        return js_parser_error(self->memory, "exp and:", exp_token, node);
     }
     
     if (js_parser_type(JS_TOKEN_AND)) {
@@ -568,7 +626,7 @@ struct js_node_t* js_parser_expression_and(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_and);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression and: <expression bitwise or> and '<expression and>' expected", token, value);
+            return js_parser_error(self->memory, "exp and: <expression bitwise or> and '<expression and>'", token, value);
         }
         
         node = js_node_cast(js_node_and_new(self->memory, node, value));
@@ -581,7 +639,7 @@ struct js_node_t* js_parser_expression_or(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_and);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression or:", exp_token, node);
+        return js_parser_error(self->memory, "exp or:", exp_token, node);
     }
     
     if (js_parser_type(JS_TOKEN_OR)) {
@@ -591,7 +649,7 @@ struct js_node_t* js_parser_expression_or(struct js_parser_t* self) {
         js_parser_func_def(value, js_parser_expression_or);
         if (js_node_error_is(value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression or: <expression and> or '<expression or>' expected", token, value);
+            return js_parser_error(self->memory, "exp or: <expression and> or '<expression or>'", token, value);
         }
         
         node = js_node_cast(js_node_or_new(self->memory, node, value));
@@ -604,7 +662,7 @@ struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_or);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression conditional:", exp_token, node);
+        return js_parser_error(self->memory, "exp conditional:", exp_token, node);
     }
     
     if (js_parser_type('?')) {
@@ -614,14 +672,14 @@ struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
         js_parser_func_def(true_value, js_parser_expression_conditional);
         if (js_node_error_is(true_value)) {
             js_node_free(node);
-            return js_parser_error(self->memory, "expression conditional: <expression or> ? '<expression conditional>' expected", true_token, true_value);
+            return js_parser_error(self->memory, "exp conditional: <expression or> ? '<expression conditional>'", true_token, true_value);
         }
         
         js_node_def_token(dot_token);
         if (js_parser_type_not(':')) {
             js_node_free(node);
             js_node_free(true_value);
-            return js_parser_error(self->memory, "expression conditional: <expression or> ? <expression conditional> ':' expected", dot_token, 0);
+            return js_parser_error(self->memory, "exp conditional: <expression or> ? <expression conditional> ':'", dot_token, 0);
         }
         js_parser_next();
         
@@ -630,7 +688,7 @@ struct js_node_t* js_parser_expression_conditional(struct js_parser_t* self) {
         if (js_node_error_is(false_value)) {
             js_node_free(node);
             js_node_free(true_value);
-            return js_parser_error(self->memory, "expression conditional: <expression or> ? <expression conditional> : '<expression conditional>' expected", false_token, false_value);
+            return js_parser_error(self->memory, "exp conditional: <expression or> ? <expression conditional> : '<expression conditional>'", false_token, false_value);
         }
         
         node = js_node_cast(js_node_ternary_new(self->memory, node, true_value, false_value));
@@ -643,7 +701,7 @@ struct js_node_t* js_parser_expression(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_func_def(node, js_parser_expression_conditional);
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "expression:", exp_token, node);
+        return js_parser_error(self->memory, "exp:", exp_token, node);
     }
     return node;
 }
@@ -654,14 +712,14 @@ struct js_node_t* js_parser_statement_if(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_exp_def(expression);
     if (js_node_error_is(expression)) {
-        return js_parser_error(self->memory, "statement if: if '<expression>' expected", exp_token, expression);
+        return js_parser_error(self->memory, "statement if: if '<exp>'", exp_token, expression);
     }
     
     js_node_def_token(stmt_token);
     js_parser_stmt_def(statement);
     if (js_node_error_is(statement)) {
         js_node_free(expression);
-        return js_parser_error(self->memory, "statement if: if <expression> '<statement>' expected", stmt_token, statement);
+        return js_parser_error(self->memory, "statement if: if <exp> '<statement>'", stmt_token, statement);
     }
     
     if (js_parser_type(JS_TOKEN_ELSE)) {
@@ -672,7 +730,7 @@ struct js_node_t* js_parser_statement_if(struct js_parser_t* self) {
         if (js_node_error_is(else_expression)) {
             js_node_free(expression);
             js_node_free(statement);
-            return js_parser_error(self->memory, "statement if: if <expression> <statement> else '<expression>' expected", else_exp_token, else_expression);
+            return js_parser_error(self->memory, "statement if: if <exp> <statement> else '<exp>'", else_exp_token, else_expression);
         }
         return js_node_cast(js_node_if_new(self->memory, expression, statement, else_expression));
     } else {
@@ -686,14 +744,14 @@ struct js_node_t* js_parser_statement_while(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_exp_def(expression);
     if (js_node_error_is(expression)) {
-        return js_parser_error(self->memory, "statement while: while '<expression>' expected", exp_token, expression);
+        return js_parser_error(self->memory, "statement while: while '<exp>'", exp_token, expression);
     }
     
     js_node_def_token(stmt_token);
     js_parser_stmt_def(statement);
     if (js_node_error_is(statement)) {
         js_node_free(expression);
-        return js_parser_error(self->memory, "statement while: while <expression> '<statement>' expected", stmt_token, statement);
+        return js_parser_error(self->memory, "statement while: while <exp> '<statement>'", stmt_token, statement);
     }
     
     return js_node_cast(js_node_while_new(self->memory, expression, statement));
@@ -705,7 +763,7 @@ struct js_node_t* js_parser_statement_return(struct js_parser_t* self) {
     js_node_def_token(exp_token);
     js_parser_exp_def(expression);
     if (js_node_error_is(expression)) {
-        return js_parser_error(self->memory, "statement return: return '<expression>' expected", exp_token, expression);
+        return js_parser_error(self->memory, "statement return: return '<exp>'", exp_token, expression);
     }
     
     return js_node_cast(js_node_return_new(self->memory, expression));
@@ -714,7 +772,7 @@ struct js_node_t* js_parser_statement_return(struct js_parser_t* self) {
 struct js_node_t* js_parser_statement_variable_item(struct js_parser_t* self) {
     js_node_def_token(id_token);
     if (js_parser_type_not(JS_TOKEN_ID)) {
-        return js_parser_error(self->memory, "statement variable item: '<id>' expected", id_token, 0);
+        return js_parser_error(self->memory, "statement variable item: '<id>'", id_token, 0);
     }
     
     js_parser_id_def(id);
@@ -727,7 +785,7 @@ struct js_node_t* js_parser_statement_variable_item(struct js_parser_t* self) {
         js_parser_exp_def(value);
         if (js_node_error_is(value)) {
             js_node_free((struct js_node_t*) id);
-            return js_parser_error(self->memory, "statement variable item: <id> = '<expression>' expected", exp_token, value);
+            return js_parser_error(self->memory, "statement variable item: <id> = '<exp>'", exp_token, value);
         }
         return js_node_cast(js_node_var_item_new(self->memory, (struct js_node_id_t*) id, value));
     } else {
@@ -742,7 +800,7 @@ struct js_node_t* js_parser_statement_variable(struct js_parser_t* self) {
     js_node_def_token(var_item_token);
     js_node_def(node, js_parser_statement_variable_item(self));
     if (js_node_error_is(node)) {
-        return js_parser_error(self->memory, "statement variable: var '<id> [= <expression>]?' expected", var_item_token, node);
+        return js_parser_error(self->memory, "statement variable: var '<id> [= <exp>]?'", var_item_token, node);
     }
     js_node_add(head, tail, node)
     
@@ -752,7 +810,7 @@ struct js_node_t* js_parser_statement_variable(struct js_parser_t* self) {
         js_node_def_token(var_item_token);
         js_node_def(node, js_parser_statement_variable_item(self));
         if (js_node_error_is(node)) {
-            return js_parser_error(self->memory, "statement variable: var '<id> [= <expression>]?' expected", var_item_token, node);
+            return js_parser_error(self->memory, "statement variable: var '<id> [= <exp>]?'", var_item_token, node);
         }
         js_node_add(head, tail, node);
     }
@@ -779,7 +837,7 @@ struct js_node_t* js_parser_statement_block(struct js_parser_t* self) {
         js_parser_stmt_def(node);
         if (js_node_error_is(node)) {
             js_node_free(head);
-            return js_parser_error(self->memory, "statement block: do '(<statement>)*' end expected", statement_token, node);
+            return js_parser_error(self->memory, "statement block: do '(<statement>)*' end", statement_token, node);
         }
         js_node_add(head, tail, node);
     }
@@ -787,7 +845,7 @@ struct js_node_t* js_parser_statement_block(struct js_parser_t* self) {
     js_node_def_token(end_token);
     if (js_parser_type_not(JS_TOKEN_END)) {
         js_node_free(head);
-        return js_parser_error(self->memory, "statement block: do (<statement)* 'end' expected", end_token, 0);
+        return js_parser_error(self->memory, "statement block: do (<statement)* 'end'", end_token, 0);
     }
     js_parser_next();
     
@@ -800,7 +858,7 @@ struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
     
     js_node_def_token(id_first_token);
     if (js_parser_type_not(JS_TOKEN_ID)) {
-        return js_parser_error(self->memory, "parameter list: '<id>' expected", id_first_token, 0);
+        return js_parser_error(self->memory, "parameter list: '<id>'", id_first_token, 0);
     }
     js_parser_id_def(id);
     
@@ -813,7 +871,7 @@ struct js_node_t* js_parser_parameter_list(struct js_parser_t* self) {
         js_node_def_token(id_next_token);
         if (js_parser_type_not(JS_TOKEN_ID)) {
             js_node_free(head);
-            return js_parser_error(self->memory, "parameter list: '<id>' expected", id_next_token, 0);
+            return js_parser_error(self->memory, "parameter list: '<id>'", id_next_token, 0);
         }
         js_parser_id_def(id);
         js_node_add(head, tail, id);
@@ -834,7 +892,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     
     js_node_def_token(id_token);
     if (js_parser_type_not(JS_TOKEN_ID)) {
-        return js_parser_error(self->memory, "element function: function '<id>' expected", id_token, 0);
+        return js_parser_error(self->memory, "element function: function '<id>'", id_token, 0);
     }
     js_parser_id_def(id);
     js_parser_next();
@@ -842,7 +900,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     js_node_def_token(arg_open_token);
     if (js_parser_type_not('(')) {
         js_parser_node_id_free(id);
-        return js_parser_error(self->memory, "element function: function <id> '(' expected", arg_open_token, 0);
+        return js_parser_error(self->memory, "element function: function <id> '('", arg_open_token, 0);
     }
     js_parser_next();
     
@@ -850,14 +908,14 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     struct js_node_param_t* param = (struct js_node_param_t*) js_parser_parameter_list_opt(self);
     if (param && js_node_error_is(param)) {
         js_parser_node_id_free(id);
-        return js_parser_error(self->memory, "element function: function <id> ( '<parameter list>' expected", arg_token, param);
+        return js_parser_error(self->memory, "element function: function <id> ( '<parameter list>'", arg_token, param);
     }
     
     js_node_def_token(arg_close_token);
     if (js_parser_type_not(')')) {
         js_parser_node_id_free(id);
         js_node_free_typed(param);
-        return js_parser_error(self->memory, "element function: function <id> ( <parameter list> ')' expected", arg_close_token, 0);
+        return js_parser_error(self->memory, "element function: function <id> ( <parameter list> ')'", arg_close_token, 0);
     }
     js_parser_next();
     
@@ -866,7 +924,7 @@ struct js_node_t* js_parser_element_function(struct js_parser_t* self) {
     if (js_node_error_is(statement)) {
         js_parser_node_id_free(id);
         js_node_free_typed(param);
-        return js_parser_error(self->memory, "element function: function <id> ( <parameter list> ) '<statement>' expected", stmt_token, statement);
+        return js_parser_error(self->memory, "element function: function <id> ( <parameter list> ) '<statement>'", stmt_token, statement);
     }
     
     return js_node_cast(js_node_function_new(self->memory, id, param, statement));
@@ -877,20 +935,20 @@ struct js_node_t* js_parser_element_constructor(struct js_parser_t* self) {
     
     js_node_def_token(arg_open_token);
     if (js_parser_type_not('(')) {
-        return js_parser_error(self->memory, "element constructor: constructor '(' expected", arg_open_token, 0);
+        return js_parser_error(self->memory, "element constructor: constructor '('", arg_open_token, 0);
     }
     js_parser_next();
     
     js_node_def_token(arg_token);
     js_node_def(parameters, js_parser_parameter_list_opt(self));
     if (parameters && js_node_error_is(parameters)) {
-        return js_parser_error(self->memory, "element constructor: constructor ( '<parameter list>' expected", arg_token, parameters);
+        return js_parser_error(self->memory, "element constructor: constructor ( '<parameter list>'", arg_token, parameters);
     }
     
     js_node_def_token(arg_close_token);
     if (js_parser_type_not(')')) {
         js_node_free(parameters);
-        return js_parser_error(self->memory, "element constructor: constructor ( <parameter list> ')' expected", arg_close_token, 0);
+        return js_parser_error(self->memory, "element constructor: constructor ( <parameter list> ')'", arg_close_token, 0);
     }
     js_parser_next();
     
@@ -898,7 +956,7 @@ struct js_node_t* js_parser_element_constructor(struct js_parser_t* self) {
     js_node_def(statement, js_parser_statement(self));
     if (js_node_error_is(statement)) {
         js_node_free(parameters);
-        return js_parser_error(self->memory, "element constructor: constructor ( <parameter list> ) '<statement>' expected", stmt_token, statement);
+        return js_parser_error(self->memory, "element constructor: constructor ( <parameter list> ) '<statement>'", stmt_token, statement);
     }
     
     return js_node_cast(js_node_constructor_new(self->memory, parameters, statement));
@@ -909,7 +967,7 @@ struct js_node_t* js_parser_element_field(struct js_parser_t* self) {
     
     js_node_def_token(id_token);
     if (js_parser_type_not(JS_TOKEN_ID)) {
-        return js_parser_error(self->memory, "element class field: var '<id>' expected", id_token, 0);
+        return js_parser_error(self->memory, "element class field: var '<id>'", id_token, 0);
     }
     js_parser_id_def(id);
     js_parser_next();
@@ -922,7 +980,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
     
     js_node_def_token(id_token);
     if (js_parser_type_not(JS_TOKEN_ID)) {
-        return js_parser_error(self->memory, "element class: class '<id>' expected", id_token, 0);
+        return js_parser_error(self->memory, "element class: class '<id>'", id_token, 0);
     }
     js_parser_id_def(id);
     js_parser_next();
@@ -934,7 +992,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
         js_node_def_token(extends_token);
         if (js_parser_type_not(JS_TOKEN_ID)) {
             js_parser_node_id_free(id);
-            return js_parser_error(self->memory, "element class: class <id> extends '<id>' expected", extends_token, 0);
+            return js_parser_error(self->memory, "element class: class <id> extends '<id>'", extends_token, 0);
         }
         js_parser_id_assign(extends);
         js_parser_next();
@@ -944,7 +1002,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
     if (js_parser_type_not(JS_TOKEN_DO)) {
         js_parser_node_id_free(id);
         js_parser_node_id_free(extends);
-        return js_parser_error(self->memory, "element class: class <id> ... 'do' expected", do_token, 0);
+        return js_parser_error(self->memory, "element class: class <id> ... 'do'", do_token, 0);
     }
     js_parser_next();
     
@@ -964,7 +1022,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
                 js_node_free(constructor_head);
                 js_node_free(field_head);
                 js_node_free(method_head);
-                return js_parser_error(self->memory, "element class: class <id> ... do ... '<function>' expected", func_token, node);
+                return js_parser_error(self->memory, "element class: class <id> ... do ... '<function>'", func_token, node);
             }
             js_node_add(method_head, method_tail, node);
         } else if (js_parser_type(JS_TOKEN_CONSTRUCTOR)) {
@@ -976,7 +1034,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
                 js_node_free(constructor_head);
                 js_node_free(field_head);
                 js_node_free(method_head);
-                return js_parser_error(self->memory, "element class: class <id> ... do ... '<constructor>' expected", func_token, node);
+                return js_parser_error(self->memory, "element class: class <id> ... do ... '<constructor>'", func_token, node);
             }
             js_node_add(constructor_head, constructor_tail, node);
         } else if (js_parser_type(JS_TOKEN_VAR)) {
@@ -988,13 +1046,13 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
                 js_node_free(constructor_head);
                 js_node_free(field_head);
                 js_node_free(method_head);
-                return js_parser_error(self->memory, "element class: class <id> ... do ... '<field>' expected", func_token, node);
+                return js_parser_error(self->memory, "element class: class <id> ... do ... '<field>'", func_token, node);
             }
             js_node_add(field_head, field_tail, node);
         } else if (js_parser_type(JS_TOKEN_END)) {
             break;
         } else {
-            return js_parser_error(self->memory, "element class: class <id> ... do ... '<constructor> | <function> | <field>' expected", end_token, 0);
+            return js_parser_error(self->memory, "element class: class <id> ... do ... '<constructor> | <function> | <field>'", end_token, 0);
         }
         
     }
@@ -1003,7 +1061,7 @@ struct js_node_t* js_parser_element_class(struct js_parser_t* self) {
     if (js_parser_type_not(JS_TOKEN_END)) {
         js_parser_node_id_free(id);
         js_parser_node_id_free(extends);
-        return js_parser_error(self->memory, "element class: class <id> [extends <id>] do (<field> | <function>)* 'end' expected", end_token, 0);
+        return js_parser_error(self->memory, "element class: class <id> [extends <id>] do (<field> | <function>)* 'end'", end_token, 0);
     }
     js_parser_next();
     
@@ -1047,7 +1105,7 @@ struct js_node_t* js_parser(struct js_parser_t* self) {
         js_node_def_token(elem_token);
         struct js_node_t* element = js_parser_statement(self);
         if (js_node_error_is(element)) {
-            return js_parser_error(self->memory, "parser: ('<element>')* expected", elem_token, element);
+            return js_parser_error(self->memory, "parser: ('<element>')*", elem_token, element);
         }
         js_node_add(head, tail, element);
     }

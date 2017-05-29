@@ -5,20 +5,29 @@
 #include "js.h"
 
 static void test_js_node_exec(char* code, char* expected) {
+    {
+        size_t length = strlen(code);
+        size_t n; for (n = 0 ; n < length ; n++) {
+            struct flow_memory_t* memory = flow_memory_new();
+            struct js_compiler_t* compiler = js_compiler_new(memory);
+            char* chars = strndup(code, n);
+            struct js_node_t* node = js_compiler_exec(compiler, code);
+            free(chars);
+            if (node) js_node_free_typed(node);
+            js_compiler_free(compiler);
+            if (memory->count != 0) {
+                printf("%s\n%zu objects alive\n\n", code, memory->count);
+                assert(0);
+            }
+            flow_memory_free(memory);
+        }
+    }
     struct flow_memory_t* memory = flow_memory_new();
-    struct js_token_t* tokens = js_lexer(memory, code);
-    struct js_parser_t* parser = js_parser_new(memory, tokens);
-    struct js_node_t* node = js_parser(parser);
-    js_parser_free(parser);
-    js_tokens_free(tokens);
+    struct js_compiler_t* compiler = js_compiler_new(memory);
+    struct js_node_t* node = js_compiler_exec(compiler, code);
     if (js_node_error_is(node)) {
         js_node_error_print(js_node_error_revert(js_node_error_type(node)));
-        assert(0);
     } else {
-        struct js_compiler_t* compiler = js_compiler_new(memory);
-        js_node_head(node, compiler);
-        js_node_body(node, compiler);
-        js_compiler_free(compiler);
         struct js_context_t* context = js_context_new(memory);
         js_value_obj_new(context);
         js_node_exec_typed(node, context);
@@ -35,16 +44,31 @@ static void test_js_node_exec(char* code, char* expected) {
         }
         js_context_free(context);
         js_node_free_typed(node);
-        if (memory->count != 0) {
-            printf("%s\n%zu objects alive\n\n", code, memory->count);
-        }
-        flow_memory_free(memory);
     }
+    js_compiler_free(compiler);
+    if (memory->count != 0) {
+        printf("%s\n%zu objects alive\n\n", code, memory->count);
+    }
+    flow_memory_free(memory);
 }
 
 void test_js_node() {
+    test_js_node_exec("function a() do return {b:1 c:{e:{f:2}} d:3} end return a().c.e.f", "2");
+    test_js_node_exec("var a = {b:1 c:{e:{f:2}} d:3} return a.b + a.c.e.f + a.d", "6");
+    test_js_node_exec("var a = {b:1 c:2 d:3} return a.b + a.c + a.d", "6");
+    test_js_node_exec("var a = {b:1 c:2} return a.b + a.c", "3");
+    test_js_node_exec("var a = {b:1} return a.b", "1");
+    test_js_node_exec("return {c:{e:{f:2}}}.c.e.f", "2");
+    test_js_node_exec("return {b:1}.b", "1");
+    
+    test_js_node_exec("return {a:1 b:2 c:3}", "<object>");
+    test_js_node_exec("return {a:1 b:2}", "<object>");
+    test_js_node_exec("return {a:1}", "<object>");
+    test_js_node_exec("return {}", "<object>");
+    
     test_js_node_exec("class a do end", "<object>");
     test_js_node_exec("class a do var a end", "<object>");
+    test_js_node_exec("class a do function a() do return 1 end end", "<object>");
     test_js_node_exec("class a do function a() do end end", "<object>");
     test_js_node_exec("class a do constructor() do end end", "<object>");
     
