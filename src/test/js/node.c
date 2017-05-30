@@ -5,54 +5,74 @@
 #include "js.h"
 
 static void test_js_node_exec(char* code, char* expected) {
-    if(/* DISABLES CODE */ (0)){
+    {
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_compiler_t* compiler = js_compiler_new(memory);
+        struct js_node_t* node = js_compiler_exec(compiler, code);
+        if (js_node_error_is(node)) {
+            js_node_error_print(js_node_error_revert(js_node_error_type(node)));
+        } else {
+            struct js_context_t* context = js_context_new(memory);
+            js_value_obj_new(context);
+            js_node_exec_typed(node, context);
+            if (!js_context_empty(context)) {
+                js_context_peek_def(context, value);
+                const char* chars = js_value_str_ansi((struct js_value_t*) value);
+                if (strcmp(expected, chars)) {
+                    printf("%s\nExpected: %s\nActual: %s\n\n", code, expected, chars);
+                }
+                js_context_pop(context);
+            }
+            while (!js_context_empty(context)) {
+                js_context_pop(context);
+            }
+            js_context_free(context);
+            js_node_free_typed(node);
+        }
+        js_compiler_free(compiler);
+        if (memory->count != 0) {
+            printf("%s\n%zu objects alive\n\n", code, memory->count);
+        }
+        flow_memory_free(memory);
+    }
+    {
         size_t length = strlen(code);
         size_t n; for (n = 0 ; n < length ; n++) {
             struct flow_memory_t* memory = flow_memory_new();
             struct js_compiler_t* compiler = js_compiler_new(memory);
             char* chars = strndup(code, n);
             struct js_node_t* node = js_compiler_exec(compiler, chars);
-            free(chars);
             if (node) js_node_free_typed(node);
             js_compiler_free(compiler);
             if (memory->count != 0) {
-                printf("%s\n%zu objects alive\n\n", code, memory->count);
+                printf("%s\n%zu objects alive\n\n", chars, memory->count);
                 assert(0);
             }
+            free(chars);
             flow_memory_free(memory);
         }
     }
-    struct flow_memory_t* memory = flow_memory_new();
-    struct js_compiler_t* compiler = js_compiler_new(memory);
-    struct js_node_t* node = js_compiler_exec(compiler, code);
-    if (js_node_error_is(node)) {
-        js_node_error_print(js_node_error_revert(js_node_error_type(node)));
-    } else {
-        struct js_context_t* context = js_context_new(memory);
-        js_value_obj_new(context);
-        js_node_exec_typed(node, context);
-        if (!js_context_empty(context)) {
-            js_context_peek_def(context, value);
-            const char* chars = js_value_str_ansi((struct js_value_t*) value);
-            if (strcmp(expected, chars)) {
-                printf("%s\nExpected: %s\nActual: %s\n\n", code, expected, chars);
-            }
-            js_context_pop(context);
+}
+
+static void test_js_node_compile(char* code) {
+    {
+        struct flow_memory_t* memory = flow_memory_new();
+        struct js_compiler_t* compiler = js_compiler_new(memory);
+        struct js_node_t* node = js_compiler_exec(compiler, code);
+        if (js_node_error_is(node)) {
+            js_node_error_print(js_node_error_type(node));
         }
-        while (!js_context_empty(context)) {
-            js_context_pop(context);
-        }
-        js_context_free(context);
         js_node_free_typed(node);
+        js_compiler_free(compiler);
+        if (memory->count != 0) {
+            printf("%s\n%zu objects alive\n\n", code, memory->count);
+        }
+        flow_memory_free(memory);
     }
-    js_compiler_free(compiler);
-    if (memory->count != 0) {
-        printf("%s\n%zu objects alive\n\n", code, memory->count);
-    }
-    flow_memory_free(memory);
 }
 
 void test_js_node() {
+    test_js_node_compile("return");
     test_js_node_exec("return new a(1,2,3)", "<object>");
     test_js_node_exec("return new a(1,2)", "<object>");
     test_js_node_exec("return new a(1)", "<object>");

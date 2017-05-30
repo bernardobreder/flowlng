@@ -30,11 +30,13 @@ struct js_node_t* js_compiler_exec(struct js_compiler_t* self, char * source) {
     struct js_node_t* node = js_parser(parser);
     js_parser_free(parser);
     js_tokens_free(tokens);
-    if (!js_nodes_error_is(node)) {
+    if (js_nodes_error_is(node)) {
+        return js_node_cast(js_node_error_revert(js_node_error_type(node)));
+    } else {
         js_node_head(node, self);
         js_node_body(node, self);
+        return node;
     }
-    return node;
 }
 
 js_bool js_compiler_error_empty(struct js_compiler_t* self) {
