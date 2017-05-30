@@ -60,6 +60,7 @@ void js_node_free(struct js_node_t* self) {
         case JS_NODE_CALL: return js_node_call_free((struct js_node_call_t*) self);
         case JS_NODE_OBJ: return js_node_obj_free((struct js_node_obj_t*) self);
         case JS_NODE_OBJ_ENTRY: return js_node_obj_entry_free((struct js_node_obj_entry_t*) self);
+        case JS_NODE_NEW: return js_node_new_free((struct js_node_new_t*) self);
     }
     js_node_free_self(self);
 }
@@ -120,6 +121,7 @@ void js_node_head(struct js_node_t* self, struct js_compiler_t* compiler) {
             case JS_NODE_CALL: js_node_call_head((struct js_node_call_t*) node, compiler); break;
             case JS_NODE_OBJ: return js_node_obj_head((struct js_node_obj_t*) self, compiler); break;
             case JS_NODE_OBJ_ENTRY: return js_node_obj_entry_head((struct js_node_obj_entry_t*) self, compiler); break;
+            case JS_NODE_NEW: return js_node_new_head((struct js_node_new_t*) self, compiler); break;
         }
         node = node->next;
     }
@@ -181,6 +183,7 @@ void js_node_body(struct js_node_t* self, struct js_compiler_t* compiler) {
             case JS_NODE_CALL: js_node_call_body((struct js_node_call_t*) node, compiler); break;
             case JS_NODE_OBJ: return js_node_obj_body((struct js_node_obj_t*) self, compiler); break;
             case JS_NODE_OBJ_ENTRY: return js_node_obj_entry_body((struct js_node_obj_entry_t*) self, compiler); break;
+            case JS_NODE_NEW: return js_node_new_body((struct js_node_new_t*) self, compiler); break;
         }
         node = node->next;
     }
@@ -240,6 +243,7 @@ void js_node_exec_single(struct js_node_t* self, struct js_context_t* context) {
         case JS_NODE_CALL: js_node_call_exec((struct js_node_call_t*) self, context); break;
         case JS_NODE_OBJ: return js_node_obj_exec((struct js_node_obj_t*) self, context); break;
         case JS_NODE_OBJ_ENTRY: return js_node_obj_entry_exec((struct js_node_obj_entry_t*) self, context); break;
+        case JS_NODE_NEW: return js_node_new_exec((struct js_node_new_t*) self, context); break;
     }
 }
 
@@ -731,7 +735,7 @@ void js_node_string_exec(struct js_node_string_t* self, struct js_context_t* con
     js_value_str_new(context, self->value, self->length, self->hash);
 }
 
-struct js_node_num_t* js_node_num_new(struct flow_memory_t* memory, double value) {
+struct js_node_num_t* js_node_num_new(struct flow_memory_t* memory, js_num value) {
     struct js_node_num_t* self = flow_memory_alloc_typed(memory, struct js_node_num_t);
     self->type = JS_NODE_NUM;
     self->next = 0;
@@ -753,7 +757,7 @@ void js_node_num_exec(struct js_node_num_t* self, struct js_context_t* context) 
     js_value_num_new(context, self->value);
 }
 
-struct js_node_int_t* js_node_int_new(struct flow_memory_t* memory, int value) {
+struct js_node_int_t* js_node_int_new(struct flow_memory_t* memory, js_int value) {
     struct js_node_int_t* self = flow_memory_alloc_typed(memory, struct js_node_int_t);
     self->type = JS_NODE_INT;
     self->next = 0;
@@ -973,6 +977,35 @@ void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* conte
     
     js_context_push_typed(context, array);
     js_value_release(array);
+}
+
+struct js_node_new_t* js_node_new_new(struct flow_memory_t* memory, struct js_node_id_t* id, struct js_node_t* param) {
+    struct js_node_new_t* self = flow_memory_alloc_typed(memory, struct js_node_new_t);
+    self->type = JS_NODE_NEW;
+    self->next = 0;
+    self->id = id;
+    self->param = param;
+    return self;
+}
+
+void js_node_new_free(struct js_node_new_t* self) {
+    js_node_free_typed(self->id);
+    js_node_free_typed(self->param);
+    js_node_free_self(self);
+}
+
+void js_node_new_head(struct js_node_new_t* self, struct js_compiler_t* compiler) {
+    js_node_head_typed(self->id, compiler);
+    js_node_head_typed(self->param, compiler);
+}
+
+void js_node_new_body(struct js_node_new_t* self, struct js_compiler_t* compiler) {
+    js_node_body_typed(self->id, compiler);
+    js_node_body_typed(self->param, compiler);
+}
+
+void js_node_new_exec(struct js_node_new_t* self, struct js_context_t* context) {
+    js_value_obj_new(context);
 }
 
 struct js_node_super_t* js_node_super_new(struct flow_memory_t* memory) {

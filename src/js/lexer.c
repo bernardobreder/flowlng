@@ -47,6 +47,7 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
                 else if (strcmp3(word, "var")) type = JS_TOKEN_VAR;
                 else if (strcmp3(word, "end")) type = JS_TOKEN_END;
                 else if (strcmp3(word, "and")) type = JS_TOKEN_AND;
+                else if (strcmp3(word, "new")) type = JS_TOKEN_NEW;
                 else if (strcmp3(word, "xor")) type = JS_TOKEN_XOR;
                 else if (strcmp3(word, "pow")) type = JS_TOKEN_POW;
             } else if (size == 4) {
@@ -76,6 +77,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
             struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = strndup(word, size);
+            token->length = size;
+            token->hash = js_hash_perform(token->word, size);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -100,6 +103,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
 			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = JS_TOKEN_NUMBER;
             token->word = word;
+            token->length = size;
+            token->hash = js_hash_perform(token->word, size);
 			token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -137,6 +142,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
 			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
+            token->length = size;
+            token->hash = js_hash_perform(token->word, size);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -172,6 +179,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
 			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
+            token->length = size;
+            token->hash = js_hash_perform(token->word, size);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -201,6 +210,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
 			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = type;
             token->word = word;
+            token->length = size;
+            token->hash = js_hash_perform(token->word, size);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -215,6 +226,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
 			struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
 			token->type = c;
             token->word = strndup(pc, 1);
+            token->length = 1;
+            token->hash = js_hash_perform(token->word, 1);
             token->line = lin;
 			token->column = col;
 			token->next = 0;
@@ -229,6 +242,8 @@ struct js_token_t* js_lexer(struct flow_memory_t* memory, const char* text) {
         struct js_token_t* token = flow_memory_alloc_typed(memory, struct js_token_t);
         token->type = JS_TOKEN_EOF;
         token->word = strdup("<EOF>");
+        token->length = 0;
+        token->hash = 0;
         token->line = lin;
         token->column = col;
         token->next = 0;

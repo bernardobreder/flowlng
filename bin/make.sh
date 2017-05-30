@@ -15,7 +15,4 @@ gcc \
     -framework CoreServices \
     -w -O3 -o dist/flow
 
-echo Executing...
-dist/flow -t
-
 echo Finished
