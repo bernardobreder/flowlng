@@ -53,18 +53,23 @@ static void test_js_node_exec(char* code, char* expected) {
 }
 
 void test_js_node() {
-    test_js_node_exec("function a() do return {b:1 c:{e:{f:2}} d:3} end return a().c.e.f", "2");
-    test_js_node_exec("var a = {b:1 c:{e:{f:2}} d:3} return a.b + a.c.e.f + a.d", "6");
-    test_js_node_exec("var a = {b:1 c:2 d:3} return a.b + a.c + a.d", "6");
-    test_js_node_exec("var a = {b:1 c:2} return a.b + a.c", "3");
+    test_js_node_exec("function a() do return {b:1, c:{e:{f:2}}, d:3} end return a().c.e.f", "2");
+    test_js_node_exec("var a = {b:1, c:{e:{f:2}}, d:3} return a.b + a.c.e.f + a.d", "6");
+    test_js_node_exec("var a = {b:1, c:2, d:3} return a.b + a.c + a.d", "6");
+    test_js_node_exec("var a = {b:1, c:2} return a.b + a.c", "3");
     test_js_node_exec("var a = {b:1} return a.b", "1");
     test_js_node_exec("return {c:{e:{f:2}}}.c.e.f", "2");
     test_js_node_exec("return {b:1}.b", "1");
     
-    test_js_node_exec("return {a:1 b:2 c:3}", "<object>");
-    test_js_node_exec("return {a:1 b:2}", "<object>");
+    test_js_node_exec("return {a:1, b:2, c:3}", "<object>");
+    test_js_node_exec("return {a:1, b:2}", "<object>");
     test_js_node_exec("return {a:1}", "<object>");
     test_js_node_exec("return {}", "<object>");
+    
+    test_js_node_exec("return [1, 2, 3]", "<array>");
+    test_js_node_exec("return [1, 2]", "<array>");
+    test_js_node_exec("return [1]", "<array>");
+    test_js_node_exec("return []", "<array>");
     
     test_js_node_exec("class a do end", "<object>");
     test_js_node_exec("class a do var a end", "<object>");

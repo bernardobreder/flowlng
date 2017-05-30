@@ -45,6 +45,7 @@ const js_str js_value_str_ansi(struct js_value_t* self) {
         case JS_VALUE_FUNC: return "function";
         case JS_VALUE_CLASS: return "class";
         case JS_VALUE_OBJ: return "<object>";
+        case JS_VALUE_ARRAY: return "<array>";
         case JS_VALUE_BOOL: return js_value_bool_value(self) ? "true" : "false";
         case JS_VALUE_STR: {
             struct js_value_str_t* str_value = (struct js_value_str_t*) self;

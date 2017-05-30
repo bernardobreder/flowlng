@@ -14,7 +14,8 @@ struct flow_memory_t* flow_memory_new();
 
 void flow_memory_free(struct flow_memory_t* self);
 
-void* flow_memory_alloc(struct flow_memory_t* self, int size);
+void* flow_memory_alloc(struct flow_memory_t* self, size_t size);
+void* flow_memory_realloc(struct flow_memory_t* self, void* data, size_t size);
 
 #define flow_memory_alloc_typed(SELF, TYPE) (TYPE*) flow_memory_alloc(SELF, sizeof(TYPE))
 #define flow_memory_retain(VALUE) VALUE = VALUE;

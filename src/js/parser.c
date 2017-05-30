@@ -92,14 +92,7 @@ struct js_node_t* js_parser_expression_object(struct js_parser_t* self) {
     js_node_list_def(head, tail);
     js_parser_next();
     
-    if (js_parser_type(JS_TOKEN_EOF)) {
-        return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", self->token, 0);
-    }
-    
-    while (js_parser_type_not('}')) {
-        if (js_parser_type(JS_TOKEN_EOF)) {
-            return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", self->token, 0);
-        }
+    if (js_parser_type_not('}')) {
         
         js_node_def_token(entry_token);
         js_parser_func_def(entry_node, js_parser_expression_object_entry);
@@ -107,14 +100,59 @@ struct js_node_t* js_parser_expression_object(struct js_parser_t* self) {
             return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", entry_token, entry_node);
         }
         js_node_add(head, tail, entry_node);
+        
+        while (js_parser_type(',')) {
+            js_parser_next();
+            
+            js_node_def_token(entry_token);
+            js_parser_func_def(entry_node, js_parser_expression_object_entry);
+            if (js_node_error_is(entry_node)) {
+                return js_parser_error(self->memory, "exp primitive: { '<id> : <exp>'", entry_token, entry_node);
+            }
+            js_node_add(head, tail, entry_node);
+            
+        }
     }
     
-    if (js_parser_type(JS_TOKEN_EOF)) {
-        return js_parser_error(self->memory, "exp primitive: { <id> : <exp> '}'", self->token, 0);
+    if (js_parser_type_not('}')) {
+        return js_parser_error(self->memory, "exp primitive: { ... '}'", self->token, 0);
     }
     
     js_parser_next();
     return js_node_cast(js_node_obj_new(self->memory, (struct js_node_obj_entry_t*) head));
+}
+
+struct js_node_t* js_parser_expression_array(struct js_parser_t* self) {
+    js_node_list_def(head, tail);
+    js_parser_next();
+    
+    if (js_parser_type_not(']')) {
+        
+        js_node_def_token(exp_token);
+        js_parser_func_def(exp_node, js_parser_expression);
+        if (js_node_error_is(exp_node)) {
+            return js_parser_error(self->memory, "exp primitive: [ '<exp>'", exp_token, 0);
+        }
+        js_node_add(head, tail, exp_node);
+        
+        while (js_parser_type(',')) {
+            js_parser_next();
+            
+            js_node_def_token(exp_token);
+            js_parser_func_def(exp_node, js_parser_expression);
+            if (js_node_error_is(exp_node)) {
+                return js_parser_error(self->memory, "exp primitive: [ <exp> , ... , '<exp>'", exp_token, 0);
+            }
+            js_node_add(head, tail, exp_node);
+        }
+    }
+    
+    if (js_parser_type_not(']')) {
+        return js_parser_error(self->memory, "exp primitive: [ ... ']'", self->token, 0);
+    }
+    
+    js_parser_next();
+    return js_node_cast(js_node_array_new(self->memory, head));
 }
 
 struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
@@ -138,6 +176,8 @@ struct js_node_t* js_parser_expression_primary(struct js_parser_t* self) {
         return expression;
     } else if (js_parser_type('{')) {
         return js_parser_expression_object(self);
+    } else if (js_parser_type('[')) {
+        return js_parser_expression_array(self);
     } else if (js_parser_type(JS_TOKEN_ID)) {
         js_parser_id_def(id);
         js_parser_next();

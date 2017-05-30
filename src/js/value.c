@@ -15,6 +15,7 @@ void js_value_free(struct js_value_t* self) {
         case JS_VALUE_NUM: return js_value_num_free((struct js_value_num_t*) self);
         case JS_VALUE_STR: return js_value_str_free((struct js_value_str_t*) self);
         case JS_VALUE_OBJ: return js_value_obj_free((struct js_value_obj_t*) self);
+        case JS_VALUE_ARRAY: return js_value_array_free((struct js_value_array_t*) self);
         case JS_VALUE_FUNC: return js_value_func_free((struct js_value_func_t*) self);
         case JS_VALUE_CLASS: return js_value_class_free((struct js_value_class_t*) self);
     }

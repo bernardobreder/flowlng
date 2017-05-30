@@ -86,12 +86,13 @@
 #define JS_NODE_POS_INC 42
 #define JS_NODE_POS_DEC 43
 #define JS_NODE_GET 44
-#define JS_NODE_ARRAY 45
+#define JS_NODE_GET_ARRAY 45
 #define JS_NODE_CALL 46
 #define JS_NODE_PARAM 47
 #define JS_NODE_STMT_EXP 50
 #define JS_NODE_OBJ 51
 #define JS_NODE_OBJ_ENTRY 52
+#define JS_NODE_ARRAY 53
 
 #define JS_VALUE_NULL 0
 #define JS_VALUE_BOOL 1
@@ -102,6 +103,7 @@
 #define JS_VALUE_CLASS 6
 #define JS_VALUE_FUNC 7
 #define JS_VALUE_COBJ 8
+#define JS_VALUE_ARRAY 9
 
 typedef uint8 js_bool;
 typedef double js_num;
@@ -291,6 +293,12 @@ struct js_node_this_t {
 struct js_node_super_t {
     unsigned char type;
     struct js_node_t* next;
+};
+
+struct js_node_array_t {
+    unsigned char type;
+    struct js_node_t* next;
+    struct js_node_t* node;
 };
 
 struct js_node_obj_t {
@@ -484,7 +492,7 @@ struct js_node_get_t {
     struct js_node_id_t* name;
 };
 
-struct js_node_array_t {
+struct js_node_get_array_t {
     unsigned char type;
     struct js_node_t* next;
     struct js_node_t* node;
@@ -624,8 +632,12 @@ struct js_value_t* js_context_peek_index(struct js_context_t* self, js_size inde
 #define js_context_peek_index_def(CONTEXT, NAME, INDEX) \
         struct js_value_t* NAME = js_context_peek_index(CONTEXT, INDEX);
 #define js_context_peek_is_obj(CONTEXT) js_value_is_obj(CONTEXT->value)
-#define js_context_peek_obj_def(CONTEXT, NAME) \
-        struct js_value_obj_t* NAME = (struct js_value_obj_t*) CONTEXT->value;
+#define js_context_peek_typed_def(CONTEXT, NAME, TYPED) \
+        TYPED NAME = (TYPED) CONTEXT->value;
+#define js_context_peek_obj_def(CONTEXT, NAME) js_context_peek_typed_def(CONTEXT, NAME, struct js_value_obj_t*)
+#define js_context_peek_int_def(CONTEXT, NAME) js_context_peek_typed_def(CONTEXT, NAME, struct js_value_int_t*)
+#define js_context_peek_num_def(CONTEXT, NAME) js_context_peek_typed_def(CONTEXT, NAME, struct js_value_num_t*)
+#define js_context_peek_bool_def(CONTEXT, NAME) js_context_peek_typed_def(CONTEXT, NAME, struct js_value_bool_t*)
 #define js_context_peek_func_def(CONTEXT, NAME) \
         struct js_value_func_t* NAME = (struct js_value_func_t*) CONTEXT->value;
 #define js_context_peek_obj_or_push_null(CONTEXT, NAME) \
@@ -705,8 +717,24 @@ const js_str js_value_str_ansi(struct js_value_t* self);
 js_size js_value_str_len(struct js_value_t* self);
 js_hash js_value_str_hash(struct js_value_t* self);
 js_hash js_value_str_hash_concat(struct js_value_t* left, struct js_value_t* right);
-
 void js_value_str_concat(struct js_context_t* context);
+
+struct js_value_array_t {
+    size_t ref_counter;
+    unsigned char type;
+    struct js_value_t* next;
+    js_int len;
+    js_int max;
+    struct js_value_t** array;
+};
+
+void js_value_array_new(struct js_context_t* context);
+void js_value_array_free(struct js_value_array_t* self);
+void js_value_array_length(struct js_context_t* context);
+void js_value_array_add(struct js_context_t* context);
+void js_value_array_last(struct js_context_t* context);
+void js_value_array_first(struct js_context_t* context);
+void js_value_array_get(struct js_context_t* context);
 
 #define js_node_cast(VALUE) ((struct js_node_t*)(VALUE))
 #define js_node_free_self(NODE) \
@@ -790,6 +818,12 @@ void js_node_obj_entry_free(struct js_node_obj_entry_t* self);
 void js_node_obj_entry_head(struct js_node_obj_entry_t* self, struct js_compiler_t* compiler);
 void js_node_obj_entry_body(struct js_node_obj_entry_t* self, struct js_compiler_t* compiler);
 void js_node_obj_entry_exec(struct js_node_obj_entry_t* self, struct js_context_t* context);
+
+struct js_node_array_t* js_node_array_new(struct flow_memory_t* memory, struct js_node_t* node);
+void js_node_array_free(struct js_node_array_t* self);
+void js_node_array_head(struct js_node_array_t* self, struct js_compiler_t* compiler);
+void js_node_array_body(struct js_node_array_t* self, struct js_compiler_t* compiler);
+void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* context);
 
 struct js_node_super_t* js_node_super_new(struct flow_memory_t* memory);
 void js_node_super_free(struct js_node_super_t* self);
@@ -953,11 +987,11 @@ void js_node_get_head(struct js_node_get_t* self, struct js_compiler_t* compiler
 void js_node_get_body(struct js_node_get_t* self, struct js_compiler_t* compiler);
 void js_node_get_exec(struct js_node_get_t* self, struct js_context_t* context);
 
-struct js_node_array_t* js_node_array_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value);
-void js_node_array_free(struct js_node_array_t* self);
-void js_node_array_head(struct js_node_array_t* self, struct js_compiler_t* compiler);
-void js_node_array_body(struct js_node_array_t* self, struct js_compiler_t* compiler);
-void js_node_array_exec(struct js_node_array_t* self, struct js_context_t* context);
+struct js_node_get_array_t* js_node_get_array_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* value);
+void js_node_get_array_free(struct js_node_get_array_t* self);
+void js_node_get_array_head(struct js_node_get_array_t* self, struct js_compiler_t* compiler);
+void js_node_get_array_body(struct js_node_get_array_t* self, struct js_compiler_t* compiler);
+void js_node_get_array_exec(struct js_node_get_array_t* self, struct js_context_t* context);
 
 struct js_node_call_t* js_node_call_new(struct flow_memory_t* memory, struct js_node_t* node, struct js_node_t* param);
 void js_node_call_free(struct js_node_call_t* self);
